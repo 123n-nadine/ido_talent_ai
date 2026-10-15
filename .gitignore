@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.uv-cache/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.cache/
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Data, models, documents (synthetic data only, never committed)
+data/
+models/
+files/
+uploads/
+eval/reports/
+**/data/**/*.pdf
+**/data/**/*.docx
+**/data/**/*.doc
+**/data/**/*.jpg
+**/data/**/*.jpeg
+**/data/**/*.png
+*.sql
+*.dump
+*.sqlite
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Frappe (used only in ido_talent_ai)
+*.pyc
+node_modules
+__pycache__
