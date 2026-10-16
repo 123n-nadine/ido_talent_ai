@@ -36,6 +36,25 @@ def _company() -> str:
 	).insert().name
 
 
+EMP_USER = "talentai.employee.test@example.com"
+
+
+def _employee_user() -> str:
+	"""A user that really holds the Employee role. ERPNext strips that role from a user without an
+	Employee record (validate_employee_role), so the test user gets a synthetic one."""
+	from ido_talent_ai.scripts.seed_demo import ensure_employee
+
+	_company()
+	if not frappe.db.exists("Gender", "Male"):
+		frappe.get_doc({"doctype": "Gender", "gender": "Male"}).insert()
+	if not frappe.db.exists("User", EMP_USER):
+		frappe.get_doc({"doctype": "User", "email": EMP_USER, "first_name": "Emp", "send_welcome_email": 0}).insert()
+	ensure_employee(EMP_USER, "Emp")
+	frappe.get_doc("User", EMP_USER).add_roles("Employee")
+	assert "Employee" in frappe.get_roles(EMP_USER), "the test user must hold the Employee role"
+	return EMP_USER
+
+
 def _criteria():
 	rows = []
 	for key, text, w, q in (("supervision", "الإشراف", 60, "years_sup"), ("licence", "الرخصة", 40, "licence")):
@@ -228,11 +247,7 @@ class TestTalentAI(IntegrationTestCase):
 		perms = frappe.get_all("Custom DocPerm", filters={"parent": "Job Applicant", "permlevel": 1}, pluck="role")
 		self.assertTrue({"HR Manager", "HR User"} <= set(perms))
 		self.assertNotIn("Employee", perms)
-		if not frappe.db.exists("User", "talentai.employee.test@example.com"):
-			u = frappe.get_doc({"doctype": "User", "email": "talentai.employee.test@example.com", "first_name": "Emp", "send_welcome_email": 0})
-			u.insert()
-			u.add_roles("Employee")
-		frappe.set_user("talentai.employee.test@example.com")
+		frappe.set_user(_employee_user())
 		try:
 			with self.assertRaises(frappe.PermissionError):
 				api.ranking(self.opening)
@@ -397,6 +412,33 @@ class TestTalentAI(IntegrationTestCase):
 		self.assertFalse(doc.resume_attachment)
 		self.assertIn("broken.pdf", doc.ai_cv_note or "")
 
+	# ------------------------------------------------------------------ permissions
+	def test_every_hr_method_refuses_other_users_first(self):
+		"""Every whitelisted method except the public form, the job requirements, the signed engine
+		callback and i_am_hr refuses a non-HR user before it reads or changes anything."""
+		import inspect
+
+		from ido_talent_ai import profile
+		from ido_talent_ai.talent_ai.doctype.ai_recruitment_settings import ai_recruitment_settings
+
+		public = {"apply", "job_requirements", "receive_result", "i_am_hr"}
+		methods = [
+			f for m in (api, profile, ai_recruitment_settings) for _, f in inspect.getmembers(m, inspect.isfunction)
+			if f in frappe.whitelisted and f.__module__ == m.__name__ and f.__name__ not in public
+		]
+		self.assertGreaterEqual(len(methods), 22)
+		frappe.set_user(_employee_user())
+		try:
+			for f in methods:
+				kwargs = {
+					n: 0 if p.annotation in (int, "int") else "x"
+					for n, p in inspect.signature(f).parameters.items() if p.default is inspect.Parameter.empty
+				}
+				with self.assertRaises(frappe.PermissionError, msg=f.__name__):
+					f(**kwargs)
+		finally:
+			frappe.set_user("Administrator")
+
 	# ------------------------------------------------------------------ home page
 	def test_hr_users_land_on_the_home_page_in_arabic(self):
 		from ido_talent_ai.utils import HOME_ROUTE, on_session_creation
@@ -418,13 +460,13 @@ class TestTalentAI(IntegrationTestCase):
 		finally:
 			frappe.local.flags.home_page = None
 			frappe.set_user("Administrator")
-		# a non-HR user keeps the normal landing page and cannot read the counts
-		frappe.set_user("talentai.employee.test@example.com") if frappe.db.exists("User", "talentai.employee.test@example.com") else None
-		if frappe.session.user != "Administrator":
-			try:
-				on_session_creation()
-				self.assertFalse(frappe.local.flags.home_page)
-				with self.assertRaises(frappe.PermissionError):
-					api.home_counts()
-			finally:
-				frappe.set_user("Administrator")
+		# an Employee keeps the normal landing page and cannot read the counts
+		frappe.set_user(_employee_user())
+		try:
+			frappe.local.flags.home_page = None
+			on_session_creation()
+			self.assertFalse(frappe.local.flags.home_page)
+			with self.assertRaises(frappe.PermissionError):
+				api.home_counts()
+		finally:
+			frappe.set_user("Administrator")
