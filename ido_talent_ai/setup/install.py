@@ -47,7 +47,9 @@ def custom_fields() -> dict:
 			_f("ai_consent", "Check", "Consent to AI processing", insert_after="weight_kg", read_only=1),
 			_f("ai_consent_version", "Data", "Consent version", insert_after="ai_consent", read_only=1),
 			_f("ai_consent_on", "Datetime", "Consent given on", insert_after="ai_consent_version", read_only=1),
-			_f("ai_answers_section", "Section Break", "Screening answers", insert_after="ai_consent_on"),
+			_f("ai_consent_withdrawn_on", "Datetime", "Consent withdrawn on", insert_after="ai_consent_on", read_only=1,
+			   depends_on="ai_consent_withdrawn_on"),
+			_f("ai_answers_section", "Section Break", "Screening answers", insert_after="ai_consent_withdrawn_on"),
 			_f("ai_answers", "Table", "Screening answers", options="AI Applicant Answer", insert_after="ai_answers_section"),
 			# AI section (HR only)
 			_f("ai_section", "Section Break", "AI assessment", insert_after="ai_answers", permlevel=AI_LEVEL),

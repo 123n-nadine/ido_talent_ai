@@ -288,3 +288,39 @@ class TestTalentAI(IntegrationTestCase):
 		self.assertEqual(op.ai_profile_approved, 1)
 		self.assertEqual(op.job_application_route, "ai-apply")
 		self.assertEqual(api.job_requirements(self.opening)["requirements"], ["الطول 175 سم أو أكثر"])
+
+	# ------------------------------------------------------------------ feature 13
+	def test_talent_pool_names_suggestions_and_exclusions(self):
+		res, _ = self._apply("pool.one@example.com", {"years_sup": 6, "licence": "سارية"})
+		doc = frappe.get_doc("Job Applicant", res["reference"])
+		ref = screening.ensure_candidate_ref(doc)
+		engine_out = {
+			"job_ref": self.opening, "suggestion_only": True, "model": "fake",
+			"suggestions": [{"candidate_ref": ref, "similarity": 0.8, "eligibility": "eligible", "eligibility_checks": [], "previous": {"job_title": TITLE}}],
+			"excluded": [{"candidate_ref": "JA-UNKNOWN", "reason": "retention_expired", "reason_ar": "انتهت مدة الاحتفاظ ببياناته", "reason_en": "", "details": []}],
+			"counts": {"suggested": 1, "excluded": 1},
+		}
+		with patch.object(engine, "call", return_value=engine_out) as call:
+			out = api.talent_pool(self.opening)
+		self.assertEqual(call.call_args.args[:2], ("POST", "/v1/talent-pool/search"))
+		self.assertTrue(out["suggestion_only"])
+		self.assertEqual(out["suggestions"][0]["applicant"], doc.name)
+		self.assertEqual(out["suggestions"][0]["applicant_name"], "متقدم تجريبي")
+		self.assertEqual(out["excluded"][0]["applicant_name"], "JA-UNKNOWN")
+
+	def test_withdrawn_consent_stops_processing(self):
+		res, _ = self._apply("consent.off@example.com", {"years_sup": 2, "licence": "سارية"})
+		name = res["reference"]
+		with self.assertRaises(frappe.ValidationError):
+			api.withdraw_consent(name, "")
+		with patch.object(engine, "call", side_effect=_engine_ok):
+			screening.ensure_candidate_ref(frappe.get_doc("Job Applicant", name))
+			api.withdraw_consent(name, "طلب المتقدم ذلك")
+		self.assertEqual(frappe.db.get_value("Job Applicant", name, "ai_consent"), 0)
+		self.assertTrue(frappe.db.get_value("Job Applicant", name, "ai_consent_withdrawn_on"))
+		payload = screening.candidate_payload(frappe.get_doc("Job Applicant", name))
+		self.assertFalse(payload["consent"])
+		with self.assertRaises(frappe.ValidationError):
+			screening.queue_screening(name, "Rescreen")
+		screening.start_screening(name)
+		self.assertFalse(frappe.db.exists("AI Recruitment Job", {"reference_name": name, "status": "Queued"}))

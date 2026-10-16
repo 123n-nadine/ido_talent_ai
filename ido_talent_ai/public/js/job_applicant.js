@@ -42,6 +42,15 @@ const talent_ai_form = {
 		if (frm.doc.ai_assessment) {
 			frm.add_custom_button(t("تحليل السيرة", "CV analysis"), () => T.openCvAnalysis(frm.doc.name), "Talent AI");
 		}
+		if (frm.doc.ai_consent) {
+			frm.add_custom_button(t("سحب موافقة المعالجة", "Withdraw consent"), () =>
+				T.reason_dialog(t("المتقدم طلب سحب موافقته على المعالجة الآلية", "The applicant withdrew consent to automated processing"), (v) =>
+					T.call("withdraw_consent", { applicant: frm.doc.name, reason: v.reason }).then(() => {
+						frappe.show_alert({ indicator: "orange", message: t("سُجّل سحب الموافقة: لا معالجة جديدة ولا اقتراح في بنك المتقدمين", "Recorded: no new processing and no talent-pool suggestion") });
+						frm.reload_doc();
+					})
+				), "Talent AI");
+		}
 		if (frm.doc.job_title) {
 			frm.add_custom_button(t("ترتيب الشاغر", "Opening ranking"), () => frappe.set_route("ai-ranking", { opening: frm.doc.job_title }), "Talent AI");
 		}
