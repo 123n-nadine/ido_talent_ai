@@ -20,6 +20,9 @@ doctype_js = {
 }
 doctype_list_js = {"Job Applicant": "public/js/job_applicant_list.js"}
 
+# HR users land on «التوظيف الذكي» (Arabic by default) after login
+on_session_creation = "ido_talent_ai.utils.on_session_creation"
+
 after_install = "ido_talent_ai.setup.install.after_install"
 after_migrate = "ido_talent_ai.setup.install.after_migrate"
 before_uninstall = "ido_talent_ai.setup.install.before_uninstall"

@@ -246,17 +246,33 @@ def on_applicant_insert(doc, method=None):
 	job, so a conflict on shared tables can never roll back the application itself."""
 	try:
 		s = get_settings()
-		ready = s.enabled and s.auto_screen_on_apply and ai_ready(doc.job_title)
+		ready = s.enabled and s.auto_screen_on_apply and ai_ready(doc.job_title) and doc.get("ai_consent")
 		values = {"ai_data_hash": data_signature(doc)}
 		if ready:
 			values["ai_status"] = "Processing"
 		frappe.db.set_value("Job Applicant", doc.name, values, update_modified=False)
 		if ready:
-			frappe.enqueue(
-				"ido_talent_ai.screening.start_screening", queue="short", enqueue_after_commit=True, applicant=doc.name
-			)
+			# after the commit and guarded: a queue that is down must not turn a saved application into
+			# an error page (the 2-minute safety net `queue_missing` picks it up later)
+			frappe.db.after_commit.add(lambda name=doc.name: safe_enqueue("ido_talent_ai.screening.start_screening", queue="short", applicant=name))
+	except TRANSIENT_DB_ERRORS:
+		raise  # the caller retries the whole application; never swallow a rolled-back transaction
 	except Exception:
-		frappe.log_error(title="Talent AI: could not queue the screening")
+		safe_log("Talent AI: could not queue the screening")
+
+
+def safe_enqueue(method: str, **kwargs) -> None:
+	try:
+		frappe.enqueue(method, **kwargs)
+	except Exception:
+		safe_log(f"Talent AI: could not enqueue {method}")
+
+
+def safe_log(title: str) -> None:
+	try:
+		frappe.log_error(title=title)
+	except Exception:
+		pass
 
 
 def start_screening(applicant: str) -> None:

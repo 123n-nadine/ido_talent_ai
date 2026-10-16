@@ -414,3 +414,32 @@
 /* rule operators (>=, <=) keep their reading direction inside RTL grids */
 .frappe-control[data-fieldname="rules"] [data-fieldname="operator"] .static-area,
 .frappe-control[data-fieldname="rules"] [data-fieldname="operator"] select{direction:ltr;unicode-bidi:isolate;text-align:center}
+
+/* ---- «التوظيف الذكي» home page: Frappe's own card look (its variables), bigger and calmer ---- */
+.tai-home{max-width:1180px;margin:0 auto;padding:8px 4px 40px;background:transparent}
+.tai-home .tai-home-head h1{font-size:28px;font-weight:700;margin:6px 0 4px;color:var(--heading-color,var(--text-color))}
+.tai-home .tai-home-head p{font-size:15px;color:var(--text-muted);margin:0 0 18px}
+.tai-home .tai-home-counts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:0 0 20px}
+.tai-home .tai-home-counts>div{background:var(--card-bg,#fff);border:1px solid var(--border-color);border-radius:var(--border-radius-lg,12px);padding:12px 16px;display:flex;flex-direction:column;gap:2px}
+.tai-home .tai-home-counts b{font-size:24px;font-weight:700;line-height:1.2;color:var(--text-color)}
+.tai-home .tai-home-counts small{font-size:13px;color:var(--text-muted)}
+.tai-home .tai-home-counts .blue b{color:#1d4ed8}.tai-home .tai-home-counts .amber b{color:#b45309}.tai-home .tai-home-counts .red b{color:#b91c1c}
+.tai-home .tai-home-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.tai-home .tai-home-card{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:auto auto 1fr;align-items:start;gap:12px;
+  background:var(--card-bg,#fff);border:1px solid var(--border-color);border-radius:var(--border-radius-lg,12px);padding:18px 18px 16px;min-height:118px;
+  transition:box-shadow .15s,border-color .15s,transform .15s;text-align:start}
+.tai-home .tai-home-card:hover{border-color:var(--primary,#2490ef);box-shadow:var(--shadow-md,0 4px 14px rgba(0,0,0,.08));transform:translateY(-1px)}
+.tai-home .tai-home-card:focus-visible{outline:2px solid var(--primary,#2490ef);outline-offset:2px}
+.tai-home .tai-home-card .n{font-size:22px;line-height:1;color:var(--primary,#2490ef);font-weight:700;padding-top:2px}
+.tai-home .tai-home-card .ico{width:38px;height:38px;border-radius:10px;background:var(--control-bg,#f3f3f3);display:grid;place-items:center;color:var(--text-color)}
+.tai-home .tai-home-card .ico svg{width:20px;height:20px}
+.tai-home .tai-home-card .txt{display:flex;flex-direction:column;gap:6px;min-width:0}
+.tai-home .tai-home-card .txt b{font-size:17px;font-weight:600;color:var(--text-color);line-height:1.4}
+.tai-home .tai-home-card .txt small{font-size:13.5px;line-height:1.75;color:var(--text-muted);white-space:normal}
+.tai-home .tai-home-card .ext{font-size:13px;color:var(--text-muted)}
+.tai-home .tai-home-card.off{cursor:not-allowed;opacity:.55}
+.tai-home .tai-home-card.off:hover{transform:none;box-shadow:none;border-color:var(--border-color)}
+.tai-home .tai-home-card .deny{color:#b91c1c !important}
+.tai-home .tai-home-foot{margin-top:18px;font-size:13px}
+@media (max-width:1100px){.tai-home .tai-home-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.tai-home .tai-home-grid{grid-template-columns:1fr}.tai-home .tai-home-counts{grid-template-columns:repeat(2,minmax(0,1fr))}}

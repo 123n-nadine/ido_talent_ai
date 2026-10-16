@@ -43,6 +43,20 @@ frappe.provide("talent_ai");
 	T.flagChips = (flags) => (flags || []).filter((f) => T.FLAGS[f]).map((f) => `<span class="chip ${f === "hr_override" || f === "duplicate" ? "purple" : "amber"}">${T.L(T.FLAGS[f])}</span>`).join(" ");
 	T.formUrl = (dt, name) => frappe.utils.get_form_link(dt, name);
 	T.call = (method, args) => frappe.xcall("ido_talent_ai.api." + method, args || {});
+	T.isHR = () => frappe.user && (frappe.user.has_role("HR Manager") || frappe.user.has_role("HR User"));
+
+	// The first time an HR user opens the desk home in a browser tab, show «التوظيف الذكي».
+	$(document).on("page-change", () => {
+		try {
+			const r = frappe.get_route() || [];
+			const atHome = !r.length || (r.length === 1 && ["", "desktop", "desk", "Workspaces", "workspaces"].includes(r[0]));
+			if (!atHome || !T.isHR() || frappe.session.user === "Administrator" || sessionStorage.getItem("tai_home_shown")) return;
+			sessionStorage.setItem("tai_home_shown", "1");
+			frappe.set_route("ai-recruitment");
+		} catch (e) {
+			/* never block the desk */
+		}
+	});
 
 	/* ------------------------------------------------------------------ dialogs */
 	T.reason_dialog = (title, onok, extra_fields) => {
