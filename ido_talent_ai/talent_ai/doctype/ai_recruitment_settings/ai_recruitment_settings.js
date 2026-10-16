@@ -13,7 +13,8 @@ frappe.ui.form.on("AI Recruitment Settings", {
 	},
 });
 
-const talent_ai_settings = {
+// global so tests and other scripts can reach it (Frappe evaluates form scripts in a function)
+const talent_ai_settings = (window.talent_ai_settings = {
 	status(frm) {
 		const T = talent_ai;
 		const t = T.t;
@@ -36,4 +37,4 @@ const talent_ai_settings = {
 			})
 			.catch((e) => $w.html(`<div class="tai"><div class="note danger">${t("تعذّر الاتصال بالمحرك", "Could not reach the engine")}: ${T.esc(e.message || e)}</div></div>`));
 	},
-};
+});

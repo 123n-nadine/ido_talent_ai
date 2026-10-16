@@ -14,7 +14,8 @@ frappe.ui.form.on("Job Applicant", {
 	},
 });
 
-const talent_ai_form = {
+// global so tests and other scripts can reach it (Frappe evaluates form scripts in a function)
+const talent_ai_form = (window.talent_ai_form = {
 	listen(frm) {
 		if (frm._tai_listening) return;
 		frm._tai_listening = true;
@@ -132,4 +133,4 @@ const talent_ai_form = {
 			frm.reload_doc();
 		});
 	},
-};
+});

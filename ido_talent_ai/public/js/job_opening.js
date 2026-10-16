@@ -23,7 +23,8 @@ frappe.ui.form.on("Job Opening", {
 	},
 });
 
-const talent_ai_opening = {
+// global so tests and other scripts can reach it (Frappe evaluates form scripts in a function)
+const talent_ai_opening = (window.talent_ai_opening = {
 	create_profile(frm) {
 		frappe.db
 			.get_list("AI Job Profile", { filters: { job_opening: frm.doc.name }, fields: ["name"], limit: 1 })
@@ -46,4 +47,4 @@ const talent_ai_opening = {
 			${frm.doc.ai_profile_approved ? `<div class="hint">${t("رابط التقديم العام", "Public application link")}: <a href="${apply}" target="_blank">${apply}</a></div>` : ""}
 			<div class="hint">${t("الذكاء يرتّب ويشرح فقط، والقرار دائمًا لـ HR.", "The AI ranks and explains only; HR always decides.")}</div></div></div>`);
 	},
-};
+});
