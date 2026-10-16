@@ -29,7 +29,10 @@ frappe.pages["ai-ranking"].on_page_load = function (wrapper) {
 		failed: { ar: "فشل", en: "Failed", why: { ar: "خطأ في المحرك بعد المحاولات", en: "engine error after retries" } },
 		stale: { ar: "قديم", en: "Stale", why: { ar: "نسخة معايير سابقة أو بيانات معدّلة", en: "previous criteria version or edited data" } },
 		duplicate: { ar: "مكرر", en: "Duplicate", why: { ar: "يُرتَّب الطلب الأصلي فقط", en: "only the original application is ranked" } },
+		awaiting_consent: { ar: "بانتظار الموافقة", en: "Awaiting consent", why: { ar: "لم تُرسل للذكاء؛ تُسجَّل الموافقة من صفحة الطلب", en: "not sent to the AI; record the consent on the application" } },
+		consent_withdrawn: { ar: "مستبعد: سحب الموافقة", en: "Excluded: consent withdrawn", why: { ar: "بلا درجة ولا تفاصيل، وبيانات الذكاء الاصطناعي حُذفت", en: "no score and no details; the AI data was erased" } },
 	};
+	const CONSENT = ["awaiting_consent", "consent_withdrawn"];
 
 	function load() {
 		if (!state.opening) {
@@ -57,17 +60,26 @@ frappe.pages["ai-ranking"].on_page_load = function (wrapper) {
 			<div class="c-cov hint">${t("تغطية", "coverage")} ${T.N(T.pct(x.coverage))}</div>
 			<div class="c-status">${x.hr_status ? T.chipStatus(x.hr_status) : ""}</div>
 			${(x.strengths || []).length ? `<div class="c-str">${(x.strengths || []).slice(0, 4).map((k) => `<span class="chip green">${T.esc(crit[k] || k)}</span>`).join("")}</div>` : ""}</div>`;
-		const other = (x) => `<div class="rankrow r3">
+		// the consent groups: the applicant and a date only (no score, no AI details)
+		const consentRow = (x) => `<div class="rankrow r3">
+			<div class="pos off">—</div>
+			<div class="c-name">${link(x)}<div class="hint">${x.status === "consent_withdrawn" ? t("سحب الموافقة في", "consent withdrawn on") : t("قُدِّم في", "applied on")} ${T.fd(x.at)}</div></div>
+			<div class="c-score"><span class="hint">—</span></div>
+			<div class="c-chips">${T.chipAi(x.status)}</div></div>`;
+		const other = (x) => CONSENT.includes(x.status) ? consentRow(x) : `<div class="rankrow r3">
 			<div class="pos off">—</div>
 			<div class="c-name">${link(x)}<div class="hint">${T.mix(T.lang() === "ar" ? x.reason_ar : x.reason_en)}</div></div>
 			<div class="c-score">${x.score != null && x.status !== "failed" ? `<b class="score ${x.eligibility === "not_eligible" ? "off" : x.band}">${T.N(T.fmt1(x.score))}</b>` : '<span class="hint">—</span>'}</div>
 			<div class="c-chips">${T.chipAi(x.status)} ${x.eligibility ? T.chipElig(x.eligibility) : ""} ${T.flagChips((x.flags || []).filter((f) => ["contradiction", "missing_evidence", "low_coverage", "cv_unreadable", "duplicate"].includes(f)))}</div></div>`;
 		const g = d.groups;
+		Object.keys(GROUPS).forEach((k) => (g[k] = g[k] || []));
 		const stale = g.stale.length + g.failed.length;
+		const waiting = g.awaiting_consent.length;
 		const total = (d.criteria || []).reduce((a, c) => a + c.weight, 0);
 		$body.html(`
-			<div class="page-title"><div><h1>${T.esc(d.opening_title)}</h1><div class="sub">${T.N(d.total + g.processing.filter((x) => !x.candidate_ref).length)} ${t("متقدمًا", "applicants")} · ${T.N(d.ranked_total)} ${t("مرتَّبون", "ranked")} · ${t("نسخة المعايير", "profile version")} ${T.N("v" + d.job_version)}</div></div></div>
-			<div class="kpis5" style="grid-template-columns:repeat(6,minmax(0,1fr))"><div class="kpi"><small>${t("مرتَّبون", "Ranked")}</small><b>${T.N(d.ranked_total)}</b></div>${Object.keys(GROUPS).filter((k) => k !== "duplicate").map((k) => `<div class="kpi"><small>${T.L(GROUPS[k])}</small><b>${T.N(g[k].length)}</b></div>`).join("")}</div>
+			<div class="page-title"><div><h1>${T.esc(d.opening_title)}</h1><div class="sub">${T.N(d.applicants_total != null ? d.applicants_total : d.total)} ${t("متقدمًا", "applicants")} · ${T.N(d.ranked_total)} ${t("مرتَّبون", "ranked")} · ${t("نسخة المعايير", "profile version")} ${T.N("v" + d.job_version)}</div></div></div>
+			<div class="kpis5" style="grid-template-columns:repeat(6,minmax(0,1fr))"><div class="kpi"><small>${t("مرتَّبون", "Ranked")}</small><b>${T.N(d.ranked_total)}</b></div>${Object.keys(GROUPS).filter((k) => k !== "duplicate" && !CONSENT.includes(k)).map((k) => `<div class="kpi"><small>${T.L(GROUPS[k])}</small><b>${T.N(g[k].length)}</b></div>`).join("")}</div>
+			${waiting ? `<div class="note strong">⏸ ${T.N(waiting)} ${t("طلبات بانتظار موافقة المتقدم على المعالجة، ولا تُقيَّم قبل تسجيلها من صفحة الطلب.", "applications are awaiting the applicant's consent to processing and are not screened until it is recorded on the application.")}</div>` : ""}
 			${stale ? `<div class="note grey">⚠ ${T.N(g.stale.length)} ${t("نتائج قديمة و", "stale and ")}${T.N(g.failed.length)} ${t("فاشلة لا تدخل الترتيب.", "failed results are not ranked.")} <button class="btn sm primary" data-act="rescore">↻ ${t("إعادة تقييمها", "Re-score them")}</button></div>` : ""}
 			<div class="split" style="grid-template-columns:2.6fr 1fr"><div>
 				<div class="card"><h2>${t("المرتَّبون (مكتملون ومستوفون)", "Ranked (completed and eligible)")} <small>${t("من الأعلى إلى الأدنى · حدّد 2–3 للمقارنة", "high to low · tick 2–3 to compare")}</small></h2>${d.ranked.map(row).join("") || `<p class="hint">${t("لا أحد بعد", "Nobody yet")}</p>`}${T.disclaimer()}</div>

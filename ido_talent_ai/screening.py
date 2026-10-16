@@ -30,6 +30,12 @@ from ido_talent_ai.utils import (
 )
 
 TRANSIENT_DB_ERRORS = (frappe.QueryDeadlockError, frappe.QueryTimeoutError)
+NO_CONSENT_JOB = "لا موافقة على المعالجة — أُلغيت المهمة"
+# what the AI made of an application, cleared when the consent is withdrawn (the application stays)
+AI_RESULT_FIELDS = {
+	"ai_score": 0, "ai_band": "", "ai_eligibility": "", "ai_coverage": 0, "ai_rank": 0, "ai_evaluated_on": None,
+	"ai_assessment": None, "ai_stale": 0, "ai_duplicate_of": None, "ai_flags": "", "ai_cv_note": "", "ai_cv_sha": "",
+}
 FACT_FIELDS = ("nationality", "date_of_birth", "height_cm", "weight_kg", "national_id", "id_type")
 APPLY_ROUTE = "ai-apply"
 
@@ -210,8 +216,12 @@ def publish(applicant: str, opening: str | None, status: str | None) -> None:
 
 # ----------------------------------------------------------------------------- queueing
 def queue_screening(applicant_name: str, job_type: str = "Screening", force: bool = False) -> str:
-	if not frappe.db.get_value("Job Applicant", applicant_name, "ai_consent"):
-		frappe.throw(frappe._("The applicant withdrew consent to AI processing."))
+	consent, withdrawn = frappe.db.get_value("Job Applicant", applicant_name, ["ai_consent", "ai_consent_withdrawn_on"])
+	if not consent:
+		frappe.throw(
+			frappe._("The applicant withdrew consent to AI processing.") if withdrawn
+			else frappe._("The applicant has not consented to AI processing yet: record the consent first.")
+		)
 	s = get_settings()
 	opening = frappe.db.get_value("Job Applicant", applicant_name, "job_title")
 	job = frappe.get_doc(
@@ -265,10 +275,15 @@ def on_applicant_insert(doc, method=None):
 	job, so a conflict on shared tables can never roll back the application itself."""
 	try:
 		s = get_settings()
-		ready = s.enabled and s.auto_screen_on_apply and ai_ready(doc.job_title) and doc.get("ai_consent")
+		ai_on = s.enabled and ai_ready(doc.job_title)
+		ready = ai_on and s.auto_screen_on_apply and doc.get("ai_consent")
 		values = {"ai_data_hash": data_signature(doc)}
 		if ready:
 			values["ai_status"] = "Processing"
+		elif ai_on and not doc.get("ai_consent"):
+			# a paper application entered by HR (or any form without the consent box): saved as usual,
+			# never sent to the AI until HR records the consent and its source (OPEN_QUESTIONS #20)
+			values["ai_status"] = "Awaiting Consent"
 		frappe.db.set_value("Job Applicant", doc.name, values, update_modified=False)
 		if ready:
 			# after the commit and guarded: a queue that is down must not turn a saved application into
@@ -306,11 +321,14 @@ def start_screening(applicant: str) -> None:
 def queue_missing() -> None:
 	"""Safety net (every 2 minutes): applications marked Processing without an active AI job, e.g.
 	when the queue was unavailable at submission time."""
+	# `creation` is stored in the site's time zone; the database clock may be UTC (it is on the
+	# local bench), so the limit is computed here, never with SQL now()
 	rows = frappe.db.sql(
 		"""select ja.name from `tabJob Applicant` ja
-		where ja.ai_status='Processing' and ja.creation < (now() - interval 2 minute)
+		where ja.ai_status='Processing' and ja.creation < %s
 		and not exists (select 1 from `tabAI Recruitment Job` j where j.reference_name=ja.name
 			and j.status in ('Queued','Running'))""",
+		(add_to_date(now_datetime(), minutes=-2),),
 		pluck=True,
 	)
 	for name in rows:
@@ -340,6 +358,10 @@ def _assessment_for(applicant) -> Any:
 
 def fail(job, applicant_name: str, message: str) -> None:
 	job.reload()
+	if not frappe.db.get_value("Job Applicant", applicant_name, "ai_consent"):
+		cancel_job(job, NO_CONSENT_JOB)  # the consent went meanwhile: no «فشل» over «سحب الموافقة»
+		frappe.db.commit()
+		return
 	job.status = "Failed"
 	job.error_message = message[:1000]
 	job.finished_on = now_datetime()
@@ -375,7 +397,11 @@ def run_job(ai_job: str, force: bool = False) -> None:
 	(long transactions collide with other workers on the naming series under MariaDB snapshot
 	isolation); engine outages and database conflicts are retried, other engine errors fail."""
 	job = frappe.get_doc("AI Recruitment Job", ai_job)
-	if job.status in ("Completed",):
+	if job.status in ("Completed", "Cancelled"):
+		return
+	if not frappe.db.get_value("Job Applicant", job.reference_name, "ai_consent"):
+		cancel_job(job, NO_CONSENT_JOB)
+		frappe.db.commit()
 		return
 	applicant = frappe.get_doc("Job Applicant", job.reference_name)
 	job.status = "Running"
@@ -435,6 +461,8 @@ def apply_result(payload: dict) -> str | None:
 	applicant_name = frappe.db.get_value("Job Applicant", {"ai_candidate_ref": ref}, "name")
 	if not applicant_name:
 		return None
+	if not frappe.db.get_value("Job Applicant", applicant_name, "ai_consent"):
+		return None  # consent withdrawn while the engine worked: nothing of it is kept
 	applicant = frappe.get_doc("Job Applicant", applicant_name)
 	a = _assessment_for(applicant)
 	if a.engine_screening_id and a.engine_screening_id != payload.get("screening_id"):
@@ -668,6 +696,96 @@ def on_opening_validate(doc, method=None):
 		doc.job_application_route = None
 
 
+# ----------------------------------------------------------------------------- consent (OPEN_QUESTIONS #20, #21)
+def cancel_job(job, message: str) -> None:
+	job.status = "Cancelled"
+	job.error_message = message
+	job.finished_on = now_datetime()
+	if job.started_on:
+		job.duration_s = (job.finished_on - job.started_on).total_seconds()
+	job.save(ignore_permissions=True)
+
+
+def cancel_jobs(applicant: str, message: str) -> int:
+	names = frappe.get_all(
+		"AI Recruitment Job",
+		filters={"reference_doctype": "Job Applicant", "reference_name": applicant, "status": ["in", ["Queued", "Running"]]},
+		pluck="name",
+	)
+	for name in names:
+		cancel_job(frappe.get_doc("AI Recruitment Job", name), message)
+	return len(names)
+
+
+def forget_ai_results(applicant: str) -> None:
+	"""Consent withdrawn: the platform keeps the application and drops what the AI made of it (the
+	assessment, its evidence and the AI fields); the audit trail keeps the actions, not the findings."""
+	frappe.db.set_value("Job Applicant", applicant, {**AI_RESULT_FIELDS, "ai_status": "Consent Withdrawn"}, update_modified=False)
+	for name in frappe.get_all("AI Candidate Assessment", filters={"job_applicant": applicant}, pluck="name"):
+		frappe.delete_doc("AI Candidate Assessment", name, ignore_permissions=True, force=True)
+	frappe.db.sql(
+		"""update `tabAI Recruitment Audit Log` set details=%s
+		where reference_doctype='Job Applicant' and reference_name=%s and (action like 'screening.%%' or action='hr.override')""",
+		(json.dumps({"erased": "consent_withdrawn"}), applicant),
+	)
+
+
+def _refresh_copies(applicant: str) -> None:
+	"""Later applications of the same person pointed to this one as their original: the engine
+	promoted the earliest of them; read their results again so Frappe shows the new original."""
+	copies = frappe.get_all("Job Applicant", filters={"ai_duplicate_of": applicant}, fields=["name", "ai_assessment"])
+	frappe.db.sql("update `tabJob Applicant` set ai_duplicate_of=NULL where ai_duplicate_of=%s", (applicant,))
+	for name in frappe.get_all("AI Candidate Assessment", filters={"duplicate_of": applicant}, pluck="name"):
+		frappe.db.set_value("AI Candidate Assessment", name, "duplicate_of", None, update_modified=False)
+	for c in copies:
+		sid = frappe.db.get_value("AI Candidate Assessment", c.ai_assessment, "engine_screening_id") if c.ai_assessment else None
+		if not sid:
+			continue
+		try:
+			apply_result(engine.get(f"/v1/screenings/{sid}"))
+		except engine.EngineError:
+			safe_log("Talent AI: could not refresh a promoted duplicate")
+
+
+def erase_in_engine(applicant: str) -> bool:
+	"""Ask the engine to erase what the AI made of a withdrawn application (documents and their
+	files, structured profile, talent-pool index, results). True when done; False when the engine is
+	unreachable (`erase_pending` tries again every two minutes)."""
+	ref, job_opening = frappe.db.get_value("Job Applicant", applicant, ["ai_candidate_ref", "job_title"])
+	erased: dict = {}
+	if ref:
+		try:
+			res = engine.put(f"/v1/candidates/{ref}", json={"consent": False})
+		except engine.EngineError:
+			return False
+		erased = (res or {}).get("erased") or {}
+	frappe.db.set_value("Job Applicant", applicant, "ai_erased_on", now_datetime(), update_modified=False)
+	audit("applicant.ai_data_erased", "Job Applicant", applicant, job_opening, actor="system",
+		  details={k: v for k, v in erased.items() if k != "promoted"} if ref else {"sent_to_engine": False})
+	_refresh_copies(applicant)
+	if job_opening:
+		frappe.enqueue(
+			"ido_talent_ai.screening.refresh_ranks", queue="short", job_id=f"talent_ai_ranks::{job_opening}",
+			deduplicate=True, enqueue_after_commit=True, opening=job_opening,
+		)
+	publish(applicant, job_opening, "Consent Withdrawn")
+	return True
+
+
+def erase_pending() -> None:
+	"""Safety net (every 2 minutes): a withdrawal recorded while the engine was down is erased there
+	as soon as it answers again."""
+	for name in frappe.get_all(
+		"Job Applicant", filters={"ai_consent_withdrawn_on": ["is", "set"], "ai_erased_on": ["is", "not set"]}, pluck="name"
+	):
+		try:
+			if erase_in_engine(name):
+				frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			safe_log("Talent AI: engine erasure retry failed")
+
+
 # ----------------------------------------------------------------------------- scheduler
 def sync_running_jobs() -> None:
 	"""Safety net when a callback is missed: fetch finished screenings and time out stuck ones."""
@@ -688,6 +806,10 @@ def sync_running_jobs() -> None:
 		"AI Recruitment Job", filters={"status": "Running", "engine_screening_id": ["is", "set"]},
 		fields=["name", "engine_screening_id", "started_on", "reference_name"],
 	):
+		if not frappe.db.get_value("Job Applicant", job.reference_name, "ai_consent"):
+			cancel_job(frappe.get_doc("AI Recruitment Job", job.name), NO_CONSENT_JOB)
+			frappe.db.commit()
+			continue
 		try:
 			res = engine.get(f"/v1/screenings/{job.engine_screening_id}")
 		except engine.EngineError:
@@ -706,6 +828,8 @@ def retry_failed_jobs() -> None:
 		fields=["name", "reference_name", "error_message", "job_type"],
 	):
 		msg = job.error_message or ""
+		if not frappe.db.get_value("Job Applicant", job.reference_name, "ai_consent"):
+			continue
 		if "reach" in msg or "timeout" in msg or "AI engine error" in msg:
 			db_retry(queue_screening, job.reference_name, "Rescreen")
 	frappe.db.commit()

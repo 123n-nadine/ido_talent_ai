@@ -992,5 +992,65 @@
    "note": "strong, scanned CV image",
    "cv": "HR-APP-2026-2025.jpg"
   }
+ ],
+ "paper_applications": [
+  {
+   "key": "HR-APP-2026-2026",
+   "applicant_name": "صالح المطيري",
+   "email_id": "paper.2026@example.com",
+   "phone_number": "05200102026",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002026",
+   "age": 31,
+   "height_cm": 182,
+   "weight_kg": 81,
+   "answers": {
+    "edu": "ثانوي",
+    "years_sec": 6,
+    "years_sup": 3,
+    "max_team": 6,
+    "shifts": "شاركت في إعدادها",
+    "licence": "سارية",
+    "licence_exp": "2027-11-30",
+    "reports": "أحيانًا",
+    "first_aid": "حديثة",
+    "languages": [
+     "العربية"
+    ],
+    "last_job": "مشرف وردية في مجمع تجاري بالرياض."
+   },
+   "note": "paper application entered by HR, awaiting consent (OPEN_QUESTIONS #20)"
+  },
+  {
+   "key": "HR-APP-2026-2027",
+   "applicant_name": "بدر الرشيدي",
+   "email_id": "paper.2027@example.com",
+   "phone_number": "05200102027",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002027",
+   "age": 36,
+   "height_cm": 184,
+   "weight_kg": 79,
+   "answers": {
+    "edu": "دبلوم",
+    "years_sec": 10,
+    "years_sup": 6,
+    "max_team": 12,
+    "shifts": "أعددتها بنفسي",
+    "licence": "سارية",
+    "licence_exp": "2028-02-28",
+    "reports": "بانتظام",
+    "first_aid": "حديثة",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "مشرف أمن في مستشفى خاص بالرياض منذ 2018."
+   },
+   "note": "paper application entered by HR; HR recorded the signed consent, then the screening ran",
+   "consent_source": "ورقة موقّعة"
+  }
  ]
 }

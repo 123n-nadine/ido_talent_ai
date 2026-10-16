@@ -292,8 +292,56 @@ def pool_cases() -> dict:
 	withdrawn = "applicant.2014@example.com"
 	old = "applicant.2019@example.com"
 	if frappe.db.get_value("Job Applicant", withdrawn, "ai_consent"):
+		# OPEN_QUESTIONS #21: out of the ranking, AI data erased in the engine, application kept
+		frappe.set_user("hr.manager@example.com")
 		withdraw_consent(withdrawn, "طلب المتقدم سحب موافقته على المعالجة (حالة تجريبية)")
+		frappe.set_user("Administrator")
 	frappe.db.set_value("Job Applicant", old, "creation", "2024-09-15 10:00:00", update_modified=False)
 	sync_candidate(old)
 	frappe.db.commit()
 	return {"consent_withdrawn": withdrawn, "retention_expired": old}
+
+
+def paper_cases() -> dict:
+	"""Dev demo only (OPEN_QUESTIONS #20): two paper applications entered by HR in the desk, without
+	the consent box of the online form. One stays «بانتظار الموافقة»; for the other HR records the
+	signed consent with its source, and the screening starts by itself."""
+	_guard()
+	from datetime import timedelta
+
+	from ido_talent_ai.api import record_consent
+	from ido_talent_ai.screening import approved_snapshot, opening_ai
+
+	data = load()
+	opening = frappe.db.get_value("Job Opening", {"job_title": data["opening"]["job_title"]})
+	snap = approved_snapshot(opening_ai(opening).ai_profile) or {}
+	labels = {q["key"]: q["label"] for q in snap.get("questions", [])}
+	walk_in = "Walk In" if frappe.db.exists("Job Applicant Source", "Walk In") else None
+	frappe.set_user("hr.manager@example.com")
+	out = {}
+	for a in data.get("paper_applications", []):
+		name = frappe.db.get_value("Job Applicant", {"email_id": a["email_id"], "job_title": opening})
+		if not name:
+			today = getdate(nowdate())
+			doc = frappe.get_doc(
+				{
+					"doctype": "Job Applicant", "applicant_name": a["applicant_name"], "email_id": a["email_id"],
+					"phone_number": a["phone_number"], "job_title": opening, "designation": data["designation"], "status": "Open",
+					"source": walk_in, "nationality": a["nationality"], "id_type": a["id_type"], "national_id": a["national_id"],
+					"date_of_birth": str(today.replace(year=today.year - int(a["age"])) - timedelta(days=120)),
+					"height_cm": a["height_cm"], "weight_kg": a["weight_kg"],
+				}
+			)
+			for key, value in a["answers"].items():
+				text = "\n".join(value) if isinstance(value, list) else str(value)
+				doc.append("ai_answers", {"question_key": key, "question": labels.get(key, key), "answer": text, "answered": 1 if text else 0})
+			doc.insert()
+			name = doc.name
+		frappe.db.commit()
+		if a.get("consent_source") and not frappe.db.get_value("Job Applicant", name, "ai_consent"):
+			record_consent(name, a["consent_source"])
+			frappe.db.commit()  # the screening starts after the commit
+		out[a["key"]] = name
+	frappe.set_user("Administrator")
+	print(json.dumps(out, ensure_ascii=False))
+	return out

@@ -20,7 +20,8 @@
 				return pill(doc.ai_stale ? { cls: "grey" } : o, T.L(o) + stale);
 			},
 			ai_score(value, df, doc) {
-				if (value == null || value === "" || doc.ai_status === "Processing" || doc.ai_status === "Failed") return "";
+				// a score only exists for a finished screening (0 is the empty value of the column)
+				if (value == null || value === "" || !["Completed", "Needs Review"].includes(doc.ai_status)) return "";
 				const T = talent_ai;
 				if (doc.ai_eligibility === "not_eligible") return `<b class="text-muted">${T.fmt1(value)}</b> ${pill({ cls: "red" }, T.t("غير مستوفٍ", "not eligible"))}`;
 				if (doc.ai_duplicate_of) return `<b class="text-muted">${T.fmt1(value)}</b> ${pill({ cls: "gray" }, T.t("مكرر", "duplicate"))}`;

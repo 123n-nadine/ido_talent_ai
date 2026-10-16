@@ -40,8 +40,10 @@ frappe.provide("talent_ai");
 	T.disclaimer = () => `<div class="disclaimer">ⓘ ${T.t(T.DISCLAIMER.ar, T.DISCLAIMER.en)}</div>`;
 	T.BAND = { high: { ar: "مرتفعة", en: "High", cls: "green" }, medium: { ar: "متوسطة", en: "Medium", cls: "amber" }, low: { ar: "منخفضة", en: "Low", cls: "red" } };
 	T.ELIG = { eligible: { ar: "مستوفٍ", en: "Eligible", cls: "green" }, not_eligible: { ar: "غير مستوفٍ بحسب ما كتبه", en: "Not eligible (as declared)", cls: "red" }, needs_review: { ar: "يحتاج مراجعة", en: "Needs review", cls: "amber" } };
-	T.AIST = { Processing: { ar: "جاري المعالجة", en: "Processing", cls: "blue" }, Completed: { ar: "مكتمل", en: "Completed", cls: "green" }, "Needs Review": { ar: "يحتاج مراجعة", en: "Needs Review", cls: "amber" }, Failed: { ar: "فشل", en: "Failed", cls: "red" } };
-	T.ENG = { queued: "Processing", processing: "Processing", completed: "Completed", needs_review: "Needs Review", failed: "Failed" };
+	T.AIST = { Processing: { ar: "جاري المعالجة", en: "Processing", cls: "blue" }, Completed: { ar: "مكتمل", en: "Completed", cls: "green" }, "Needs Review": { ar: "يحتاج مراجعة", en: "Needs Review", cls: "amber" }, Failed: { ar: "فشل", en: "Failed", cls: "red" },
+		"Awaiting Consent": { ar: "بانتظار الموافقة", en: "Awaiting consent", cls: "amber" }, "Consent Withdrawn": { ar: "سحب الموافقة", en: "Consent withdrawn", cls: "grey" } };
+	T.ENG = { queued: "Processing", processing: "Processing", completed: "Completed", needs_review: "Needs Review", failed: "Failed",
+		awaiting_consent: "Awaiting Consent", consent_withdrawn: "Consent Withdrawn" };
 	T.STATUS = { Open: { ar: "جديد", en: "Open", cls: "blue" }, Replied: { ar: "تم الرد", en: "Replied", cls: "blue" }, Shortlisted: { ar: "مرشّح للمقابلة", en: "Shortlisted", cls: "green" }, Rejected: { ar: "مرفوض", en: "Rejected", cls: "red" }, Hold: { ar: "معلّق", en: "On hold", cls: "amber" }, Accepted: { ar: "مقبول", en: "Accepted", cls: "green" } };
 	T.FLAGS = {
 		missing_evidence: { ar: "دليل ناقص", en: "Missing evidence" }, mandatory_missing: { ar: "معيار إلزامي بلا دليل", en: "Mandatory without evidence" },
@@ -118,6 +120,16 @@ frappe.provide("talent_ai");
 		(d.criteria || []).forEach((c) => (rubric[c.key] = c.rubric || []));
 		const rubricText = (key, lvl) => { const x = (rubric[key] || []).find((y) => y.level === lvl); return x ? T.esc(x.text) : ""; };
 		let html = "";
+		const c = d.consent || {};
+		if (c.withdrawn_on) {
+			html += `<div class="note grey">⊘ <b>${t("مستبعد: سحب الموافقة", "Excluded: consent withdrawn")}</b> — ${t("سحب المتقدم موافقته على المعالجة في", "the applicant withdrew consent to processing on")} ${T.fd(c.withdrawn_on)}. ${t("خرج من الترتيب، ولا تُعرض له درجة ولا تفاصيل.", "Out of the ranking, with no score and no details.")} ${c.erased_on ? `${t("حُذفت بيانات الذكاء الاصطناعي الخاصة به من المحرك (المستندات والملف المنظّم والفهرسة والنتائج) في", "Their AI data was erased from the engine (documents, structured profile, index and results) on")} ${T.fd(c.erased_on)}.` : t("حذف بياناته من المحرك قيد التنفيذ، ويُعاد تلقائيًا كل دقيقتين حتى يتم.", "The erasure in the engine is pending and is retried every two minutes until done.")} ${t("الطلب الأصلي باقٍ كما هو.", "The original application stays as it is.")}</div>`;
+			return `<div class="tai">${html}${T.decisionHtml(d)}</div>`;
+		}
+		if (d.ai_status === "Awaiting Consent") {
+			html += `<div class="note strong">⏸ <b>${t("بانتظار موافقة المتقدم على المعالجة", "Awaiting the applicant's consent to processing")}</b> — ${t("الطلب محفوظ بكل بياناته، ولا يُرسل للذكاء الاصطناعي قبل تسجيل الموافقة. إذا وقّع المتقدم موافقة خارج النظام (مثل نموذج ورقي)، سجّلها مع مصدرها، ويبدأ التقييم وحده.", "The application is saved with all its data and is not sent to the AI before the consent is recorded. If the applicant signed a consent outside the system (a paper form, for example), record it with its source and the screening starts by itself.")} <button class="btn sm primary" data-tai="consent">✓ ${t("تسجيل الموافقة", "Record consent")}</button></div>`;
+			return `<div class="tai">${html}${T.decisionHtml(d)}</div>`;
+		}
+		if (c.source) html += `<div class="note info">✓ ${t("سجّل الموافقة", "Consent recorded by")} <b>${T.esc(c.recorded_by || "")}</b> · ${T.fd(c.on)} — ${t("المصدر", "source")}: ${T.q(c.source)}</div>`;
 		if (d.duplicate_of) html += `<div class="note grey">⧉ <b>${t("طلب مكرر", "Duplicate application")}</b> — ${t("نفس رقم الهوية (بصمة مشفّرة) مثل", "Same national ID (hashed) as")} <a href="${talent_ai.formUrl("Job Applicant", d.duplicate_of)}"><b>${T.esc(d.duplicate_of_name || d.duplicate_of)}</b></a>. ${t("لا يُحذف أي طلب تلقائيًا؛ يُرتَّب الطلب الأصلي فقط.", "Nothing is deleted automatically; only the original application is ranked.")}</div>`;
 		const stale = d.ai_stale || (r && r.current === false);
 		if (stale && r && d.ai_status !== "Processing") html += `<div class="note grey">⚠ ${d.stale_reason === "stale" || (r && r.stale_reason === "stale") ? t("هذه النتيجة محسوبة بنسخة معايير سابقة", "This result was computed with a previous criteria version") : t("النتيجة لا تعكس آخر تعديل على بيانات المتقدم", "The result does not reflect the latest edit to the applicant data")}. ${t("لا تُعرض كنتيجة حالية ولا تدخل الترتيب حتى تُعاد.", "It is not current and is not ranked until re-scored.")} <button class="btn sm primary" data-tai="rescreen">↻ ${t("إعادة التقييم", "Re-score")}</button></div>`;
