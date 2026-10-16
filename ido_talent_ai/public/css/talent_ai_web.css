@@ -1,0 +1,10 @@
+/* Talent AI on the public job pages (the HRMS templates are not modified): secondary text with
+   WCAG AA contrast and nothing under 12 px. Scoped to /jobs and /ai-apply. */
+body[data-path^="jobs"] .text-secondary, body[data-path^="jobs"] .text-secondary *, body[data-path^="jobs"] .text-muted,
+body[data-path^="ai-apply"] .text-muted, body[data-path^="jobs"] .web-footer .text-muted, body[data-path^="ai-apply"] .web-footer .text-muted {
+	color: #56627c !important;
+}
+body[data-path^="jobs"] [style*="font-size: 11px"], body[data-path^="jobs"] .text-uppercase { font-size: 12.5px !important; letter-spacing: 0; }
+body[data-path^="jobs"] .job-card-body b, body[data-path^="jobs"] p b { color: #1f2b47; }
+body[data-path^="jobs"] .web-footer, body[data-path^="jobs"] .web-footer *, body[data-path^="ai-apply"] .web-footer, body[data-path^="ai-apply"] .web-footer *,
+body[data-path^="jobs"] .breadcrumb, body[data-path^="jobs"] .breadcrumb *, body[data-path^="jobs"] .breadcrumb-container * { color: #56627c !important; }
