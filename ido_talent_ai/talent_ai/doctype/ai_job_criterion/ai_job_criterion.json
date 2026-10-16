@@ -27,7 +27,7 @@
  ],
  "fields": [
   {
-   "columns": 1,
+   "columns": 2,
    "fieldname": "criterion_key",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -43,7 +43,7 @@
    "reqd": 1
   },
   {
-   "columns": 1,
+   "columns": 2,
    "fieldname": "weight",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -139,7 +139,7 @@
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-10-16 00:00:00.000000",
+ "modified": "2026-10-16 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Talent AI",
  "name": "AI Job Criterion",

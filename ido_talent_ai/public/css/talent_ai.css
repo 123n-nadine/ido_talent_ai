@@ -157,6 +157,8 @@
 .tai .cvtext{white-space:pre-wrap;line-height:1.9;font-size:13px;background:#fbfcff;border:1px solid var(--border);border-radius:10px;padding:14px}
 .tai .cvtext mark{background:#ffe58a;border-radius:3px;padding:0 2px}
 .tai .cvtext mark.hot{background:#ffbf47;box-shadow:0 0 0 3px #ffe9b3}
+.tai .cvtext mark.weak{background:var(--grey-bg);color:var(--grey-text);text-decoration:line-through;font-style:italic}
+.tai .ocrline.weak .ln{color:var(--grey-text);text-decoration:line-through}
 .tai .ocr{display:inline-flex;gap:5px;align-items:center}
 .tai .split{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start}
 .tai .tag-hr{background:var(--purple-bg);color:var(--purple);border-radius:8px;padding:0 6px;font-size:11px;font-weight:600}
