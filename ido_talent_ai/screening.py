@@ -153,7 +153,9 @@ def _file_bytes(file_url: str) -> tuple[str, bytes] | None:
 	if not name:
 		return None
 	f = frappe.get_doc("File", name)
-	return f.file_name or "cv", f.get_content()
+	# File.get_content() decodes text-like files (RTF) to str; the engine needs the raw bytes
+	with open(f.get_full_path(), "rb") as fh:
+		return f.file_name or "cv", fh.read()
 
 
 def push_cv(applicant, ref: str) -> None:
@@ -167,20 +169,37 @@ def push_cv(applicant, ref: str) -> None:
 				pass
 			frappe.db.set_value("Job Applicant", applicant.name, "ai_cv_sha", "", update_modified=False)
 		return
-	got = _file_bytes(url)
+	# a CV that cannot be read or is refused never fails the screening (decision 14): the
+	# applicant is assessed from the answers and HR sees why in «ملاحظة عن السيرة الذاتية»
+	try:
+		got = _file_bytes(url)
+	except Exception as e:
+		safe_log("Talent AI: CV file could not be read")
+		_cv_note(applicant, f"تعذّرت قراءة ملف السيرة من النظام ({type(e).__name__}) — التقييم من الإجابات فقط")
+		return
 	if not got:
 		return
 	fname, content = got
 	sha = hashlib.sha256(content).hexdigest()
 	if sha == applicant.get("ai_cv_sha"):
 		return
-	engine.put(
-		f"/v1/candidates/{ref}/cv",
-		files={"file": (fname, content)},
-		data={"name_hint": applicant.applicant_name or ""},
-		timeout=600,
-	)
+	try:
+		engine.put(
+			f"/v1/candidates/{ref}/cv",
+			files={"file": (fname, content)},
+			data={"name_hint": applicant.applicant_name or ""},
+			timeout=600,
+		)
+	except engine.EngineUnavailable:
+		raise  # the engine is down: the whole job is retried
+	except engine.EngineError as e:
+		_cv_note(applicant, f"المحرك رفض ملف السيرة ({e.status or ''}) — التقييم من الإجابات فقط")
+		return
 	frappe.db.set_value("Job Applicant", applicant.name, "ai_cv_sha", sha, update_modified=False)
+
+
+def _cv_note(applicant, note: str) -> None:
+	frappe.db.set_value("Job Applicant", applicant.name, "ai_cv_note", note[:240], update_modified=False)
 
 
 def publish(applicant: str, opening: str | None, status: str | None) -> None:

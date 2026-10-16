@@ -336,15 +336,23 @@ def rescreen_all(job_opening: str) -> dict:
 	rows = frappe.get_all(
 		"Job Applicant",
 		filters={"job_title": job_opening},
-		fields=["name", "ai_status", "ai_stale"],
+		fields=["name", "ai_status", "ai_stale", "ai_consent"],
 	)
-	queued = 0
+	queued, skipped = 0, []
 	for r in rows:
-		if r.ai_stale or r.ai_status in (None, "", "Failed"):
+		if not (r.ai_stale or r.ai_status in (None, "", "Failed")):
+			continue
+		if not r.ai_consent:  # consent withdrawn (or never given): no new processing, the others go on
+			skipped.append(r.name)
+			continue
+		try:
 			db_retry(queue_screening, r.name, "Rescreen", force=True)
 			queued += 1
-	audit("job.rescreen_all", "Job Opening", job_opening, job_opening, details={"queued": queued})
-	return {"queued": queued, "total": len(rows)}
+		except frappe.ValidationError:
+			frappe.clear_messages()
+			skipped.append(r.name)
+	audit("job.rescreen_all", "Job Opening", job_opening, job_opening, details={"queued": queued, "skipped": skipped})
+	return {"queued": queued, "skipped": len(skipped), "total": len(rows)}
 
 
 # ----------------------------------------------------------------------------- ranking, CSV, compare, batch

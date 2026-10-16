@@ -343,6 +343,17 @@ class TestTalentAI(IntegrationTestCase):
 			screening.queue_screening(name, "Rescreen")
 		screening.start_screening(name)
 		self.assertFalse(frappe.db.exists("AI Recruitment Job", {"reference_name": name, "status": "Queued"}))
+		# «إعادة تقييم الكل» skips this applicant and still re-scores the others (the full browser test
+		# found the whole run stopping at the first applicant who withdrew consent)
+		other, _ = self._apply("consent.on@example.com", {"years_sup": 4, "licence": "سارية"}, national_id="1000000888")
+		for n in (name, other["reference"]):
+			frappe.db.set_value("Job Applicant", n, {"ai_stale": 1, "ai_status": "Completed"})
+		with patch.object(frappe, "enqueue"):
+			res = api.rescreen_all(self.opening)
+		self.assertGreaterEqual(res["queued"], 1)
+		self.assertGreaterEqual(res["skipped"], 1)
+		self.assertTrue(frappe.db.exists("AI Recruitment Job", {"reference_name": other["reference"], "status": "Queued"}))
+		self.assertFalse(frappe.db.exists("AI Recruitment Job", {"reference_name": name, "status": "Queued"}))
 
 	# ------------------------------------------------------------------ the application is always saved
 	def test_application_is_always_saved(self):
@@ -411,6 +422,39 @@ class TestTalentAI(IntegrationTestCase):
 		doc = frappe.get_doc("Job Applicant", res["reference"])
 		self.assertFalse(doc.resume_attachment)
 		self.assertIn("broken.pdf", doc.ai_cv_note or "")
+
+	# ------------------------------------------------------------------ CV files
+	def test_text_cv_is_sent_as_bytes_and_cv_problems_never_fail(self):
+		"""RTF is a text format, so Frappe's File.get_content() returns str for it (the full browser test
+		found an RTF CV ending in «فشل»). The engine gets the raw bytes, and a CV that cannot be read or is
+		refused by the engine never fails the screening (decision 14)."""
+		res, _ = self._apply("cv.rtf.test@example.com", {"years_sup": 3, "licence": "سارية"}, national_id="1000000777")
+		name = res["reference"]
+		rtf = b"{\\rtf1\\ansi{\\fonttbl\\f0 Arial;}\\f0 Security supervisor, 6 years.\\par}"
+		f = frappe.get_doc({"doctype": "File", "file_name": "cv.rtf", "content": rtf, "attached_to_doctype": "Job Applicant",
+		                    "attached_to_name": name, "is_private": 1}).insert(ignore_permissions=True)
+		frappe.db.set_value("Job Applicant", name, "resume_attachment", f.file_url)
+		self.assertIsInstance(frappe.get_doc("File", f.name).get_content(), str)  # the trap
+		doc = frappe.get_doc("Job Applicant", name)
+		with patch.object(engine, "put") as put:
+			screening.push_cv(doc, "JA-TEST-RTF")
+		sent = put.call_args.kwargs["files"]["file"][1]
+		self.assertIsInstance(sent, bytes)
+		self.assertEqual(sent, rtf)
+		# the engine refuses the file: no exception, a note for HR, the screening goes on
+		frappe.db.set_value("Job Applicant", name, "ai_cv_sha", "")
+		doc = frappe.get_doc("Job Applicant", name)
+		with patch.object(engine, "put", side_effect=engine.EngineError("unsupported file", 415)):
+			screening.push_cv(doc, "JA-TEST-RTF")
+		self.assertIn("رفض ملف السيرة", frappe.db.get_value("Job Applicant", name, "ai_cv_note") or "")
+		# the file cannot be read on the platform: same
+		with patch.object(screening, "_file_bytes", side_effect=OSError("disk")):
+			screening.push_cv(doc, "JA-TEST-RTF")
+		self.assertIn("تعذّرت قراءة ملف السيرة", frappe.db.get_value("Job Applicant", name, "ai_cv_note") or "")
+		# an engine outage is still raised, so the whole job is retried later
+		with patch.object(engine, "put", side_effect=engine.EngineUnavailable("down")):
+			with self.assertRaises(engine.EngineUnavailable):
+				screening.push_cv(doc, "JA-TEST-RTF")
 
 	# ------------------------------------------------------------------ permissions
 	def test_every_hr_method_refuses_other_users_first(self):
