@@ -82,14 +82,16 @@ def main() -> int:
 	p.add_argument("--opening", required=True)
 	p.add_argument("--cvs", default=None, help="folder with the synthetic CV files (talent-engine/data/cvs)")
 	p.add_argument("--only", default="", help="comma-separated last 4 digits of the demo keys")
+	p.add_argument("--skip", default="", help="comma-separated last 4 digits to leave out (e.g. one submitted in a browser)")
 	p.add_argument("--delay", type=float, default=1.0)
 	args = p.parse_args()
 	with open(os.path.join(HERE, "demo_data.json"), encoding="utf-8") as f:
 		data = json.load(f)
 	only = {x.strip() for x in args.only.split(",") if x.strip()}
+	skip = {x.strip() for x in args.skip.split(",") if x.strip()}
 	ok = 0
 	for a in data["applicants"]:
-		if only and a["key"][-4:] not in only:
+		if (only and a["key"][-4:] not in only) or a["key"][-4:] in skip:
 			continue
 		res = submit(args.url, args.host, args.opening, a, args.cvs)
 		msg = res.get("message") or {}

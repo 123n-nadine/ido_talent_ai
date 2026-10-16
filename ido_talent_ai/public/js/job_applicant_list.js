@@ -20,7 +20,9 @@
 			ai_score(value, df, doc) {
 				if (value == null || value === "" || doc.ai_status === "Processing" || doc.ai_status === "Failed") return "";
 				const T = talent_ai;
-				if (doc.ai_eligibility === "not_eligible") return `<span class="text-muted">${T.t("خارج الترتيب", "not ranked")}</span>`;
+				if (doc.ai_eligibility === "not_eligible") return `<b class="text-muted">${T.fmt1(value)}</b> ${pill({ cls: "red" }, T.t("غير مستوفٍ", "not eligible"))}`;
+				if (doc.ai_duplicate_of) return `<b class="text-muted">${T.fmt1(value)}</b> ${pill({ cls: "gray" }, T.t("مكرر", "duplicate"))}`;
+				if (doc.ai_stale) return `<b class="text-muted">${T.fmt1(value)}</b> ${pill({ cls: "amber" }, T.t("قديم", "stale"))}`;
 				const o = T.BAND[doc.ai_band];
 				const rank = doc.ai_rank ? ` <span class="text-muted">#${doc.ai_rank}</span>` : "";
 				return `<b>${T.fmt1(value)}</b> ${o ? pill(o, T.L(o)) : ""}${rank}`;

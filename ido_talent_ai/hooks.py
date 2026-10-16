@@ -37,7 +37,7 @@ doc_events = {
 }
 
 scheduler_events = {
-	"cron": {"*/2 * * * *": ["ido_talent_ai.screening.sync_running_jobs"]},
+	"cron": {"*/2 * * * *": ["ido_talent_ai.screening.sync_running_jobs", "ido_talent_ai.screening.queue_missing"]},
 	"hourly": ["ido_talent_ai.screening.retry_failed_jobs"],
 }
 

@@ -197,3 +197,23 @@ hr_override,تعديل HR
 multiselect,اختيار متعدد
 Re-score,إعادة التقييم
 Decision,القرار
+Question,السؤال
+Answer,الإجابة
+Key,المفتاح
+Compared in code with the declared values. The language model never sees them.,تُقارن في الكود بالقيم التي صرّح بها المتقدم. النموذج اللغوي لا يراها أبدًا.
+"Country names or values separated by commas; between = low, high",أسماء الدول أو القيم مفصولة بفواصل؛ «بين» = الحد الأدنى، الحد الأعلى
+HMAC secret for national-ID tokens used for duplicate detection. It never leaves this site.,سر HMAC لبصمة رقم الهوية المستخدمة لكشف الطلبات المكررة. لا يغادر هذا الموقع أبدًا.
+"One per line. Only these facts are sent to the engine. Name, e-mail, phone, ID, date of birth and photo are never sent.",واحدة في كل سطر. هذه الحقائق فقط تُرسل إلى المحرك. الاسم والبريد والهاتف والهوية وتاريخ الميلاد والصورة لا تُرسل أبدًا.
+Other openings with the same designation can copy this profile.,يمكن للشواغر ذات المسمى الوظيفي نفسه نسخ هذا الملف.
+Read from and written to the engine through /v1/settings.,تُقرأ من المحرك وتُكتب إليه عبر ‎/v1/settings.
+Shown in the public application form. Answers are the primary source of the assessment.,تظهر في نموذج التقديم العام. الإجابات هي المصدر الأساسي للتقييم.
+Structured answers are scored in code from these hints: numbers use >= or > (e.g. > 5); selects list the answers separated by |.,الإجابات المنظمة تُحسب في الكود من هذه القواعد: الأرقام بـ ‎>=‎ أو ‎>‎ (مثل ‎> 5‎)، والاختيارات تُكتب مفصولة بـ |.
+URL the engine calls with results (HMAC signed). Leave empty to use this site's URL.,الرابط الذي يرسل إليه المحرك النتائج (موقّعة HMAC). اتركه فارغًا لاستخدام رابط هذا الموقع.
+"When off, applications keep working normally without AI screening.",عند الإيقاف يستمر التقديم بشكل طبيعي بدون فرز ذكي.
+Approved,معتمد
+Draft,مسودة
+Required,مطلوب
+number,رقم
+text,نص
+date,تاريخ
+boolean,نعم/لا

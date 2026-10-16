@@ -8,7 +8,8 @@ import frappe
 from frappe import _
 
 from ido_talent_ai.api import _form_context
-from ido_talent_ai.utils import arabic, get_settings
+from ido_talent_ai.countries import country_ar
+from ido_talent_ai.utils import get_settings
 
 no_cache = 1
 FIRST_COUNTRIES = ("Saudi Arabia", "Egypt", "Yemen", "Sudan", "Jordan", "Pakistan", "India", "Bangladesh", "Philippines")
@@ -37,7 +38,7 @@ def get_context(context):
 			"requirements": snap.get("requirements", []),
 			"needs_height": "height_cm" in facts,
 			"needs_weight": "weight_kg" in facts,
-			"countries_json": _js([{"value": c, "label": arabic(c)} for c in ordered]),
+			"countries_json": _js([{"value": c, "label": country_ar(c)} for c in ordered]),
 			"requirements_json": _js(snap.get("requirements", [])),
 			"meta_json": _js({"text": s.consent_text, "version": s.consent_version or "v1", "title": op.job_title, "company": op.company}),
 			"form_config": _js(

@@ -29,6 +29,9 @@ const talent_ai_form = {
 	buttons(frm) {
 		const T = talent_ai;
 		const t = T.t;
+		// HRMS's own Reject / Shortlist change the status without a reason; with Talent AI the
+		// decision goes through the buttons below (reason + decision maker, audited)
+		setTimeout(() => ["Reject", "Shortlist", __("Reject"), __("Shortlist")].forEach((b) => frm.remove_custom_button(b)), 0);
 		const grp = t("القرار", "Decision");
 		[["Shortlisted", t("ترشيح للمقابلة", "Shortlist")], ["Hold", t("تعليق", "Hold")], ["Rejected", t("رفض", "Reject")]].forEach(([st, label]) =>
 			frm.add_custom_button(label, () => talent_ai_form.decide(frm, st), grp)

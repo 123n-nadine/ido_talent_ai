@@ -13,7 +13,8 @@ from frappe import _
 from frappe.utils import cint, flt, now_datetime
 
 from ido_talent_ai import engine
-from ido_talent_ai.utils import arabic, audit, require_hr, to_json
+from ido_talent_ai.countries import country_ar
+from ido_talent_ai.utils import audit, require_hr, to_json
 
 LEVELS = (0, 25, 50, 75, 100)
 KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
@@ -52,7 +53,7 @@ def rule_value(rule) -> Any:
 	raw = (rule.value or "").strip()
 	parts = [x.strip() for x in raw.replace("،", ",").split(",") if x.strip()]
 	if rule.fact == "nationality":
-		parts = [arabic(x) for x in parts]  # Country names are sent with their Arabic label, like the facts
+		parts = [country_ar(x) for x in parts]  # same Arabic label as the applicant's fact (countries.py)
 	if rule.operator in ("in", "not_in"):
 		return parts
 	if rule.operator == "between":
@@ -67,7 +68,7 @@ def requirement_text(rule) -> str:
 	unit = UNITS.get(rule.fact, "")
 	raw = (rule.value or "").strip()
 	parts = [x.strip() for x in raw.replace("،", ",").split(",") if x.strip()]
-	shown = "، ".join(arabic(x) for x in parts) if rule.fact == "nationality" else "، ".join(parts)
+	shown = "، ".join(country_ar(x) for x in parts) if rule.fact == "nationality" else "، ".join(parts)
 	op = rule.operator
 	if op == "in":
 		return f"{label}: {shown}"

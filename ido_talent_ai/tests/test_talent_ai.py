@@ -127,9 +127,14 @@ class TestTalentAI(IntegrationTestCase):
 		self.assertEqual(answers["last_job"], ("", 0))  # blank = not answered
 		self.assertEqual(doc.ai_status, "Processing")
 		self.assertEqual(doc.status, "Open")
+		# the request itself only queued a background job; that job creates the AI Recruitment Job
+		self.assertEqual(enq.call_args.args[0], "ido_talent_ai.screening.start_screening")
+		self.assertFalse(frappe.db.exists("AI Recruitment Job", {"reference_name": doc.name}))
+		with patch.object(frappe, "enqueue") as enq2:
+			screening.start_screening(doc.name)
 		job = frappe.get_last_doc("AI Recruitment Job", filters={"reference_name": doc.name})
 		self.assertEqual(job.status, "Queued")
-		self.assertTrue(enq.called)
+		self.assertEqual(enq2.call_args.args[0], "ido_talent_ai.screening.run_job")
 		# the engine is down: the job retries and finally fails, the application stays saved
 		with patch.object(frappe, "enqueue"), patch.object(time, "sleep"):
 			for _ in range(3):

@@ -15,7 +15,7 @@ from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, now_datetime, validate_email_address
 
 from ido_talent_ai import engine
-from ido_talent_ai.screening import apply_result, approved_snapshot, queue_screening
+from ido_talent_ai.screening import apply_result, approved_snapshot, db_retry, queue_screening
 from ido_talent_ai.utils import (
 	DISCLAIMER_AR,
 	DISCLAIMER_EN,
@@ -285,7 +285,7 @@ def override(applicant: str, criterion_key: str, level: int, reason: str) -> dic
 @frappe.whitelist()
 def rescreen(applicant: str) -> dict:
 	doc = _applicant(applicant)
-	job = queue_screening(doc.name, "Rescreen", force=True)
+	job = db_retry(queue_screening, doc.name, "Rescreen", force=True)
 	return {"job": job}
 
 
@@ -293,7 +293,7 @@ def rescreen(applicant: str) -> dict:
 def retry_job(job: str) -> dict:
 	require_hr()
 	j = frappe.get_doc("AI Recruitment Job", job)
-	new = queue_screening(j.reference_name, "Rescreen", force=True)
+	new = db_retry(queue_screening, j.reference_name, "Rescreen", force=True)
 	audit("ai_job.retry", "Job Applicant", j.reference_name, j.job_opening, details={"failed_job": job, "new_job": new})
 	return {"job": new}
 
@@ -310,7 +310,7 @@ def rescreen_all(job_opening: str) -> dict:
 	queued = 0
 	for r in rows:
 		if r.ai_stale or r.ai_status in (None, "", "Failed"):
-			queue_screening(r.name, "Rescreen", force=True)
+			db_retry(queue_screening, r.name, "Rescreen", force=True)
 			queued += 1
 	audit("job.rescreen_all", "Job Opening", job_opening, job_opening, details={"queued": queued})
 	return {"queued": queued, "total": len(rows)}

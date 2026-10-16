@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import random
 import time
 from typing import Any
 
@@ -18,9 +19,9 @@ import frappe
 from frappe.utils import add_to_date, cint, date_diff, flt, getdate, now_datetime, nowdate
 
 from ido_talent_ai import engine
+from ido_talent_ai.countries import country_ar
 from ido_talent_ai.utils import (
 	STATUS_FROM_ENGINE,
-	arabic,
 	audit,
 	from_json,
 	get_settings,
@@ -28,6 +29,7 @@ from ido_talent_ai.utils import (
 	to_json,
 )
 
+TRANSIENT_DB_ERRORS = (frappe.QueryDeadlockError, frappe.QueryTimeoutError)
 FACT_FIELDS = ("nationality", "date_of_birth", "height_cm", "weight_kg", "national_id", "id_type")
 APPLY_ROUTE = "ai-apply"
 
@@ -103,7 +105,7 @@ def candidate_payload(applicant) -> dict:
 	allowed = {x.strip() for x in (s.allowed_facts or "").splitlines() if x.strip()}
 	facts: dict[str, Any] = {}
 	if "nationality" in allowed:
-		facts["nationality"] = arabic(applicant.get("nationality")) or None
+		facts["nationality"] = country_ar(applicant.get("nationality")) or None
 	if "age" in allowed:
 		facts["age"] = age_years(applicant.get("date_of_birth"))
 	if "height_cm" in allowed:
@@ -221,18 +223,59 @@ def queue_screening(applicant_name: str, job_type: str = "Screening", force: boo
 	return job.name
 
 
+def db_retry(fn, *args, attempts: int = 4, **kwargs):
+	"""Run `fn` and commit; on a database conflict (MariaDB snapshot isolation, deadlock) roll back
+	and try again. Used by background jobs and HR actions that write AI records concurrently."""
+	for i in range(attempts):
+		try:
+			out = fn(*args, **kwargs)
+			frappe.db.commit()
+			return out
+		except TRANSIENT_DB_ERRORS:
+			frappe.db.rollback()
+			if i == attempts - 1:
+				raise
+			time.sleep(0.2 * (i + 1) + random.random() * 0.4)
+
+
 def on_applicant_insert(doc, method=None):
-	"""Always succeeds: the AI must never block an application (acceptance criterion 6)."""
+	"""Always succeeds: the AI must never block an application (acceptance criterion 6).
+	Only the applicant's own row is written here; the AI Recruitment Job is created by a background
+	job, so a conflict on shared tables can never roll back the application itself."""
 	try:
-		frappe.db.set_value(
-			"Job Applicant", doc.name, "ai_data_hash", data_signature(doc), update_modified=False
-		)
 		s = get_settings()
-		if not (s.enabled and s.auto_screen_on_apply) or not ai_ready(doc.job_title):
-			return
-		queue_screening(doc.name, "Screening")
+		ready = s.enabled and s.auto_screen_on_apply and ai_ready(doc.job_title)
+		values = {"ai_data_hash": data_signature(doc)}
+		if ready:
+			values["ai_status"] = "Processing"
+		frappe.db.set_value("Job Applicant", doc.name, values, update_modified=False)
+		if ready:
+			frappe.enqueue(
+				"ido_talent_ai.screening.start_screening", queue="short", enqueue_after_commit=True, applicant=doc.name
+			)
 	except Exception:
 		frappe.log_error(title="Talent AI: could not queue the screening")
+
+
+def start_screening(applicant: str) -> None:
+	"""Background: create the AI Recruitment Job of a new application (retried on conflicts)."""
+	if frappe.db.exists("AI Recruitment Job", {"reference_name": applicant, "status": ["in", ["Queued", "Running"]]}):
+		return
+	db_retry(queue_screening, applicant, "Screening")
+
+
+def queue_missing() -> None:
+	"""Safety net (every 2 minutes): applications marked Processing without an active AI job, e.g.
+	when the queue was unavailable at submission time."""
+	rows = frappe.db.sql(
+		"""select ja.name from `tabJob Applicant` ja
+		where ja.ai_status='Processing' and ja.creation < (now() - interval 2 minute)
+		and not exists (select 1 from `tabAI Recruitment Job` j where j.reference_name=ja.name
+			and j.status in ('Queued','Running'))""",
+		pluck=True,
+	)
+	for name in rows:
+		start_screening(name)
 
 
 # ----------------------------------------------------------------------------- the job
@@ -273,9 +316,6 @@ def fail(job, applicant_name: str, message: str) -> None:
 		  details={"job": job.name, "attempts": job.attempts})
 	frappe.db.commit()
 	publish(applicant_name, job.job_opening, "Failed")
-
-
-TRANSIENT_DB_ERRORS = (frappe.QueryDeadlockError, frappe.QueryTimeoutError)
 
 
 def _retry_or_fail(job_name: str, applicant_name: str, message: str, force: bool) -> None:
@@ -333,8 +373,7 @@ def run_job(ai_job: str, force: bool = False) -> None:
 		# an identical input was already screened, or the callback raced this commit: read it now
 		current = engine.get(f"/v1/screenings/{sid}")
 		if current.get("status") in ("completed", "needs_review", "failed"):
-			apply_result(current)
-			frappe.db.commit()
+			db_retry(apply_result, current)
 	except engine.EngineUnavailable as e:
 		frappe.db.rollback()
 		_retry_or_fail(job.name, applicant.name, str(e), force)
@@ -474,6 +513,11 @@ def refresh_ranks(opening: str) -> None:
 		rk = engine.get(f"/v1/jobs/{opening}/ranking")
 	except engine.EngineError:
 		return
+	db_retry(_write_ranks, opening, rk)
+	frappe.publish_realtime("talent_ai_batch", {"job_opening": opening, "ranks": True})
+
+
+def _write_ranks(opening: str, rk: dict) -> None:
 	by_ref = {x["candidate_ref"]: x for x in rk.get("ranked", [])}
 	for name, ref, rank in frappe.get_all(
 		"Job Applicant", filters={"job_title": opening, "ai_candidate_ref": ["is", "set"]},
@@ -482,19 +526,26 @@ def refresh_ranks(opening: str) -> None:
 		new = (by_ref.get(ref) or {}).get("rank") or 0
 		if cint(rank) != new:
 			frappe.db.set_value("Job Applicant", name, "ai_rank", new, update_modified=False)
-	for a in frappe.get_all("AI Candidate Assessment", filters={"job_opening": opening}, fields=["name", "candidate_ref"]):
-		item = by_ref.get(a.candidate_ref)
-		frappe.db.set_value(
-			"AI Candidate Assessment", a.name,
-			{"rank": (item or {}).get("rank") or 0, "ranked_total": rk.get("ranked_total") or 0}, update_modified=False,
-		)
-	frappe.db.commit()
-	frappe.publish_realtime("talent_ai_batch", {"job_opening": opening, "ranks": True})
+	total = rk.get("ranked_total") or 0
+	for a in frappe.get_all(
+		"AI Candidate Assessment", filters={"job_opening": opening}, fields=["name", "candidate_ref", "rank", "ranked_total"]
+	):
+		new = (by_ref.get(a.candidate_ref) or {}).get("rank") or 0
+		if cint(a.rank) != new or cint(a.ranked_total) != total:
+			frappe.db.set_value("AI Candidate Assessment", a.name, {"rank": new, "ranked_total": total}, update_modified=False)
 
 
 # ----------------------------------------------------------------------------- edits, deletes, openings
 def on_applicant_update(doc, method=None):
-	"""Editing answers/facts/CV after evaluation makes the result stale until it is re-scored."""
+	"""Editing answers/facts/CV after evaluation makes the result stale until it is re-scored.
+	A status change made outside the HR decision buttons (form field, Kanban) is still audited."""
+	try:
+		before = doc.get_doc_before_save()
+		if before and before.status != doc.status and not doc.flags.get("talent_ai_internal"):
+			audit("hr.status_changed", "Job Applicant", doc.name, doc.job_title, reason=None,
+				  details={"from": before.status, "to": doc.status, "via": "form or board, no reason recorded"})
+	except Exception:
+		frappe.log_error(title="Talent AI: status audit failed")
 	try:
 		if doc.flags.get("talent_ai_internal") or not doc.get("ai_assessment"):
 			return
@@ -582,6 +633,18 @@ def on_opening_validate(doc, method=None):
 def sync_running_jobs() -> None:
 	"""Safety net when a callback is missed: fetch finished screenings and time out stuck ones."""
 	timeout_min = 30
+	# a worker died (restart, crash) before the engine accepted the screening: run the job again
+	for job in frappe.get_all(
+		"AI Recruitment Job",
+		filters={"status": "Running", "engine_screening_id": ["is", "not set"], "modified": ["<", add_to_date(now_datetime(), minutes=-10)]},
+		fields=["name", "reference_name", "attempts", "max_attempts"],
+	):
+		if cint(job.attempts) >= cint(job.max_attempts or 3):
+			fail(frappe.get_doc("AI Recruitment Job", job.name), job.reference_name, "worker stopped before the engine accepted the job")
+			continue
+		frappe.db.set_value("AI Recruitment Job", job.name, "status", "Queued", update_modified=True)
+		frappe.db.commit()
+		frappe.enqueue("ido_talent_ai.screening.run_job", queue="long", timeout=1800, ai_job=job.name)
 	for job in frappe.get_all(
 		"AI Recruitment Job", filters={"status": "Running", "engine_screening_id": ["is", "set"]},
 		fields=["name", "engine_screening_id", "started_on", "reference_name"],
@@ -591,8 +654,7 @@ def sync_running_jobs() -> None:
 		except engine.EngineError:
 			continue
 		if res.get("status") in ("completed", "needs_review", "failed"):
-			apply_result(res)
-			frappe.db.commit()
+			db_retry(apply_result, res)
 		elif job.started_on and job.started_on < add_to_date(now_datetime(), minutes=-timeout_min):
 			fail(frappe.get_doc("AI Recruitment Job", job.name), job.reference_name, "timeout")
 
@@ -606,7 +668,7 @@ def retry_failed_jobs() -> None:
 	):
 		msg = job.error_message or ""
 		if "reach" in msg or "timeout" in msg or "AI engine error" in msg:
-			queue_screening(job.reference_name, "Rescreen")
+			db_retry(queue_screening, job.reference_name, "Rescreen")
 	frappe.db.commit()
 
 

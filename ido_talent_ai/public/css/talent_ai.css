@@ -133,8 +133,8 @@
 .tai .mv{font-size:12px;font-weight:700}
 .tai .mv.up{color:var(--green)}
 .tai .mv.down{color:var(--red)}
-.tai details.collapse{border:1px dashed var(--border-2);border-radius:12px;padding:8px 12px;margin-top:10px}
-.tai details.collapse summary{cursor:pointer;font-weight:600;color:var(--muted)}
+.tai details.tai-group{border:1px dashed var(--border-2);border-radius:12px;padding:8px 12px;margin-top:10px}
+.tai details.tai-group summary{cursor:pointer;font-weight:600;color:var(--muted)}
 .tai .upl{display:flex;align-items:center;gap:10px}
 .tai .upl .fn{font-size:12px;color:var(--muted)}
 .tai .success{text-align:center;padding:40px 20px}
@@ -409,3 +409,8 @@
 .tai .reqs{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:16px 0}
 .tai .reqs ul{margin:8px 0 0;padding-inline-start:18px;line-height:1.9}
 @media (max-width:700px){.tai .grid2,.tai .grid3,.tai .kpis5,.tai .aihead,.tai .split{grid-template-columns:1fr !important}.tai .formcard{padding:16px}}
+.tai .rankrow .list-id .chip{white-space:nowrap}
+@media (max-width:900px){.tai .kpis5{grid-template-columns:repeat(2,minmax(0,1fr)) !important}}
+/* rule operators (>=, <=) keep their reading direction inside RTL grids */
+.frappe-control[data-fieldname="rules"] [data-fieldname="operator"] .static-area,
+.frappe-control[data-fieldname="rules"] [data-fieldname="operator"] select{direction:ltr;unicode-bidi:isolate;text-align:center}

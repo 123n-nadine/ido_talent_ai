@@ -79,6 +79,18 @@ def ensure_locale() -> None:
 	ss.save(ignore_permissions=True)
 
 
+def fix_scheduler_times() -> int:
+	"""Jobs registered before the site switched to Asia/Riyadh carry a creation time in the future
+	(the default zone was ahead), so the scheduler would skip them for hours. Bring them to now."""
+	from frappe.utils import now_datetime
+
+	now = now_datetime()
+	names = frappe.get_all("Scheduled Job Type", filters={"creation": [">", now], "last_execution": ["is", "not set"]}, pluck="name")
+	for n in names:
+		frappe.db.set_value("Scheduled Job Type", n, "creation", now, update_modified=False)
+	return len(names)
+
+
 def ensure_users(passwords: dict) -> None:
 	from frappe.utils.password import update_password
 
@@ -190,6 +202,7 @@ def setup(engine_url: str = "http://api:8000", api_key: str | None = None, callb
 	data = load()
 	company = ensure_setup(data)
 	ensure_locale()
+	fix_scheduler_times()
 	ensure_users(passwords or {})
 	ensure_settings(engine_url, api_key, callback_url)
 	template = ensure_template(data)
@@ -216,13 +229,12 @@ def rescore_all(opening: str) -> dict:
 	duplicates are known), then queue a forced re-score for each, oldest application first."""
 	_guard()
 	frappe.set_user("Administrator")
-	from ido_talent_ai.screening import queue_screening, sync_candidate
+	from ido_talent_ai.screening import db_retry, queue_screening, sync_candidate
 
 	names = frappe.get_all("Job Applicant", filters={"job_title": opening}, order_by="creation asc", pluck="name")
 	for n in names:
 		sync_candidate(n)
 	frappe.db.commit()
 	for n in names:
-		queue_screening(n, "Rescreen", force=True)
-		frappe.db.commit()
+		db_retry(queue_screening, n, "Rescreen", force=True)
 	return {"queued": len(names)}
