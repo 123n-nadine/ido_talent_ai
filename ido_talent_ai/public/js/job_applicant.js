@@ -46,11 +46,15 @@ const talent_ai_form = (window.talent_ai_form = {
 		if (frm.doc.ai_consent) {
 			frm.add_custom_button(t("سحب موافقة المعالجة", "Withdraw consent"), () =>
 				T.reason_dialog(t("المتقدم طلب سحب موافقته على المعالجة الآلية", "The applicant withdrew consent to automated processing"), (v) =>
-					T.call("withdraw_consent", { applicant: frm.doc.name, reason: v.reason }).then(() => {
-						frappe.show_alert({ indicator: "orange", message: t("سُجّل سحب الموافقة: لا معالجة جديدة ولا اقتراح في بنك المتقدمين", "Recorded: no new processing and no talent-pool suggestion") });
+					T.call("withdraw_consent", { applicant: frm.doc.name, reason: v.reason }).then((r) => {
+						frappe.show_alert({ indicator: "orange", message: r && r.erased
+							? t("سُجّل سحب الموافقة: خرج من الترتيب وحُذفت بيانات الذكاء الاصطناعي الخاصة به", "Recorded: out of the ranking and the AI data erased")
+							: t("سُجّل سحب الموافقة: خرج من الترتيب، والحذف من المحرك يُعاد تلقائيًا", "Recorded: out of the ranking; the erasure in the engine is retried automatically") });
 						frm.reload_doc();
 					})
 				), "Talent AI");
+		} else if (!frm.doc.ai_consent_withdrawn_on) {
+			frm.add_custom_button(t("تسجيل الموافقة", "Record consent"), () => talent_ai_form.consent(frm), "Talent AI");
 		}
 		if (frm.doc.job_title) {
 			frm.add_custom_button(t("ترتيب الشاغر", "Opening ranking"), () => frappe.set_route("ai-ranking", { opening: frm.doc.job_title }), "Talent AI");
@@ -82,6 +86,7 @@ const talent_ai_form = (window.talent_ai_form = {
 			else if (el.tai === "retry") talent_ai_form.retry(frm, el.job);
 			else if (el.tai === "override") talent_ai_form.override(frm, el.key, el.text, Number(el.level));
 			else if (el.tai === "cv") T.openCvAnalysis(frm.doc.name);
+			else if (el.tai === "consent") talent_ai_form.consent(frm);
 			else if (el.tai === "hilite") {
 				frm._tai.hilite = frm._tai.hilite === el.key ? null : el.key;
 				talent_ai_form.draw(frm);
@@ -113,6 +118,28 @@ const talent_ai_form = (window.talent_ai_form = {
 				}),
 			[{ fieldname: "level", fieldtype: "Select", label: T.t("المستوى الجديد", "New level"), options: "0\n25\n50\n75\n100", default: String(current), reqd: 1 }]
 		);
+		return d;
+	},
+
+	consent(frm) {
+		// OPEN_QUESTIONS #20: a consent that exists outside the system is recorded with its source
+		const T = talent_ai;
+		const d = new frappe.ui.Dialog({
+			title: T.t("تسجيل موافقة المتقدم على المعالجة", "Record the applicant's consent to processing"),
+			fields: [
+				{ fieldtype: "HTML", options: `<p class="text-muted">${T.esc(T.t("سجّل الموافقة فقط إذا كانت موجودة فعلًا، واكتب مصدرها. يُحفظ اسمك ووقت التسجيل، ويبدأ التقييم وحده.", "Record the consent only if it really exists, and write where it comes from. Your name and the time are kept, and the screening starts by itself."))}</p>` },
+				{ fieldname: "source", fieldtype: "Data", reqd: 1, label: T.t("مصدر الموافقة (إلزامي)", "Source of the consent (required)"), description: T.t("مثال: ورقة موقّعة", "For example: a signed paper form") },
+			],
+			primary_action_label: T.t("تسجيل الموافقة", "Record consent"),
+			primary_action(v) {
+				T.call("record_consent", { applicant: frm.doc.name, source: v.source }).then((r) => {
+					d.hide();
+					frappe.show_alert({ indicator: "green", message: r && r.screening_started ? T.t("سُجّلت الموافقة وبدأ التقييم", "Consent recorded; the screening started") : T.t("سُجّلت الموافقة", "Consent recorded") });
+					frm.reload_doc();
+				});
+			},
+		});
+		d.show();
 		return d;
 	},
 

@@ -12,10 +12,10 @@ import time
 import frappe
 from frappe import _
 from frappe.rate_limiter import rate_limit
-from frappe.utils import cint, now_datetime, validate_email_address
+from frappe.utils import add_to_date, cint, now_datetime, validate_email_address
 
 from ido_talent_ai import engine
-from ido_talent_ai.screening import apply_result, approved_snapshot, db_retry, queue_screening
+from ido_talent_ai.screening import apply_result, approved_snapshot, db_retry, publish, queue_screening
 from ido_talent_ai.utils import (
 	DISCLAIMER_AR,
 	DISCLAIMER_EN,
@@ -240,6 +240,11 @@ def get_assessment(applicant: str) -> dict:
 		"ai_stale": doc.get("ai_stale"),
 		"cv_note": doc.get("ai_cv_note"),
 		"decision": {"reason": doc.get("ai_decision_reason"), "by": doc.get("ai_decided_by"), "on": doc.get("ai_decided_on")},
+		"consent": {
+			"given": cint(doc.get("ai_consent")), "on": doc.get("ai_consent_on"), "source": doc.get("ai_consent_source"),
+			"recorded_by": doc.get("ai_consent_recorded_by"), "withdrawn_on": doc.get("ai_consent_withdrawn_on"),
+			"erased_on": doc.get("ai_erased_on"),
+		},
 		"disclaimer": {"ar": DISCLAIMER_AR, "en": DISCLAIMER_EN},
 		"jobs": frappe.get_all(
 			"AI Recruitment Job",
@@ -356,47 +361,69 @@ def rescreen_all(job_opening: str) -> dict:
 
 
 # ----------------------------------------------------------------------------- ranking, CSV, compare, batch
-def _names(job_opening: str) -> dict:
-	return {
-		r.ai_candidate_ref: r
-		for r in frappe.get_all(
-			"Job Applicant",
-			filters={"job_title": job_opening, "ai_candidate_ref": ["is", "set"]},
-			fields=["name", "applicant_name", "status", "ai_candidate_ref", "creation"],
-		)
-	}
+AWAITING_AR = "بانتظار الموافقة على المعالجة — تُسجَّل الموافقة من صفحة الطلب"
+AWAITING_EN = "Awaiting consent to processing — record it on the application"
+WITHDRAWN_AR = "مستبعد: سحب الموافقة — حُذفت بيانات الذكاء الاصطناعي الخاصة به"
+WITHDRAWN_EN = "Excluded: consent withdrawn — the AI data was erased"
+
+
+def _consent_item(r, status: str, at) -> dict:
+	"""A row of the consent groups: the applicant and a date, no score and no details."""
+	ar, en = (AWAITING_AR, AWAITING_EN) if status == "awaiting_consent" else (WITHDRAWN_AR, WITHDRAWN_EN)
+	return {"applicant": r.name, "applicant_name": r.applicant_name, "candidate_ref": r.ai_candidate_ref, "status": status,
+			"score": None, "band": None, "eligibility": None, "flags": [], "reason_ar": ar, "reason_en": en,
+			"at": str(at) if at else None, "hr_status": r.status}
 
 
 @frappe.whitelist()
 def ranking(job_opening: str) -> dict:
+	"""The engine ranking with the platform's view of consent: an application without consent never
+	reached the AI («بانتظار الموافقة»), one whose consent was withdrawn is out of the ranking at once
+	(«مستبعد: سحب الموافقة», OPEN_QUESTIONS #20 and #21)."""
 	require_hr()
 	rk = engine.get(f"/v1/jobs/{job_opening}/ranking")
-	names = _names(job_opening)
+	rows = frappe.get_all(
+		"Job Applicant", filters={"job_title": job_opening},
+		fields=["name", "applicant_name", "status", "ai_candidate_ref", "ai_consent", "ai_consent_withdrawn_on", "creation"],
+	)
+	by_ref = {r.ai_candidate_ref: r for r in rows if r.ai_candidate_ref}
+	withdrawn = {r.name for r in rows if r.ai_consent_withdrawn_on}
 
 	def enrich(x):
-		n = names.get(x["candidate_ref"]) or {}
+		n = by_ref.get(x["candidate_ref"]) or {}
 		x["applicant"] = n.get("name")
 		x["applicant_name"] = n.get("applicant_name") or x["candidate_ref"]
 		x["hr_status"] = n.get("status")
 		return x
 
-	rk["ranked"] = [enrich(x) for x in rk["ranked"]]
-	for g in rk["groups"]:
-		rk["groups"][g] = [enrich(x) for x in rk["groups"][g]]
-	missing = [n for ref, n in names.items()]  # applicants not yet known to the engine
+	# the platform is the source of truth for consent: a withdrawal whose erasure in the engine is
+	# still pending (engine was down) is already out of the ranking here
+	rk["ranked"] = [x for x in map(enrich, rk["ranked"]) if x["applicant"] not in withdrawn]
+	for i, x in enumerate(rk["ranked"]):
+		x["rank"] = i + 1
+	rk["ranked_total"] = len(rk["ranked"])
+	for g in list(rk["groups"]):
+		rk["groups"][g] = [x for x in map(enrich, rk["groups"][g]) if g == "consent_withdrawn" or x["applicant"] not in withdrawn]
 	known = {x["candidate_ref"] for x in rk["ranked"]} | {x["candidate_ref"] for g in rk["groups"].values() for x in g}
-	not_sent = frappe.get_all(
-		"Job Applicant", filters={"job_title": job_opening, "ai_candidate_ref": ["is", "not set"]},
-		fields=["name", "applicant_name", "ai_status"],
-	)
-	rk["groups"]["processing"] += [
-		{"applicant": r.name, "applicant_name": r.applicant_name, "status": "queued", "reason_ar": "في الانتظار", "reason_en": "Queued", "score": None}
-		for r in not_sent
-	] + [
-		{"applicant": n.name, "applicant_name": n.applicant_name, "status": "queued", "reason_ar": "في الانتظار", "reason_en": "Queued", "score": None}
-		for ref, n in names.items() if ref not in known
-	]
-	del missing
+	listed = {x["applicant"] for x in rk["groups"].get("consent_withdrawn", [])}
+	awaiting, gone, queued = [], [], []
+	for r in rows:
+		if r.ai_consent_withdrawn_on:
+			if r.name not in listed:
+				gone.append(_consent_item(r, "consent_withdrawn", r.ai_consent_withdrawn_on))
+		elif not r.ai_consent:
+			awaiting.append(_consent_item(r, "awaiting_consent", r.creation))
+		elif not r.ai_candidate_ref or r.ai_candidate_ref not in known:  # not yet known to the engine
+			queued.append({"applicant": r.name, "applicant_name": r.applicant_name, "status": "queued", "reason_ar": "في الانتظار",
+						   "reason_en": "Queued", "score": None})
+	for x in rk["groups"].get("consent_withdrawn", []):
+		r = next((y for y in rows if y.name == x.get("applicant")), None)
+		if r:
+			x.update(_consent_item(r, "consent_withdrawn", r.ai_consent_withdrawn_on))
+	rk["groups"]["processing"] = rk["groups"].get("processing", []) + queued
+	rk["groups"]["consent_withdrawn"] = [x for x in rk["groups"].get("consent_withdrawn", []) if x.get("applicant")] + gone
+	rk["groups"]["awaiting_consent"] = awaiting
+	rk["applicants_total"] = len(rows)
 	op = frappe.db.get_value("Job Opening", job_opening, ["job_title", "ai_profile"], as_dict=True)
 	snap = approved_snapshot(op.ai_profile) if op and op.ai_profile else None
 	rk["criteria"] = (snap or {}).get("criteria", [])
@@ -465,10 +492,10 @@ def batch_status(job_opening: str) -> dict:
 	from ido_talent_ai.screening import opening_stats
 
 	st = opening_stats(job_opening)
-	recent = frappe.db.sql(
+	recent = frappe.db.sql(  # the site's clock, like `finished_on` (the database clock may be UTC)
 		"""select count(*) from `tabAI Recruitment Job` where job_opening=%s and status in ('Completed','Failed')
-		and finished_on > (now() - interval 10 minute)""",
-		(job_opening,),
+		and finished_on > %s""",
+		(job_opening, add_to_date(now_datetime(), minutes=-10)),
 	)[0][0]
 	avg = frappe.db.sql(
 		"""select avg(duration_s) from `tabAI Recruitment Job` where job_opening=%s and status='Completed'""", (job_opening,)
@@ -548,19 +575,68 @@ def talent_pool(job_opening: str, limit: int = 20) -> dict:
 
 @frappe.whitelist()
 def withdraw_consent(applicant: str, reason: str) -> dict:
-	"""The applicant asked to stop the AI processing of their data: recorded by HR with a reason.
-	No new screening runs and the engine forgets the talent-pool profile."""
+	"""The applicant withdrew consent to the AI processing of their data (recorded by HR with a
+	reason). The application leaves the ranking at once and shows in «مستبعد: سحب الموافقة» with no
+	score and no details; what the AI made of it is erased here and in the engine (documents,
+	structured profile, talent-pool index, results); the application itself stays in Frappe.
+	OPEN_QUESTIONS #21: default decided by Nadine on 2026-10-16, until the client confirms."""
+	from ido_talent_ai.screening import NO_CONSENT_JOB, cancel_jobs, erase_in_engine, forget_ai_results
+
 	doc = _applicant(applicant)
 	doc.check_permission("write")
 	reason = (reason or "").strip()
 	if not reason:
 		frappe.throw(_("A reason is required."))
-	frappe.db.set_value("Job Applicant", doc.name, {"ai_consent": 0, "ai_consent_withdrawn_on": now_datetime()}, update_modified=False)
-	from ido_talent_ai.screening import sync_candidate
+	if not doc.get("ai_consent"):
+		frappe.throw(_("This application has no consent to AI processing to withdraw."))
 
-	sync_candidate(doc.name)
-	audit("applicant.consent_withdrawn", "Job Applicant", doc.name, doc.job_title, reason=reason)
-	return {"ok": True}
+	def record():
+		frappe.db.set_value("Job Applicant", doc.name, {"ai_consent": 0, "ai_consent_withdrawn_on": now_datetime()}, update_modified=False)
+		cancelled = cancel_jobs(doc.name, NO_CONSENT_JOB)
+		forget_ai_results(doc.name)
+		audit("applicant.consent_withdrawn", "Job Applicant", doc.name, doc.job_title, reason=reason, details={"cancelled_jobs": cancelled})
+
+	db_retry(record)  # committed first: a result arriving now is already refused
+	erased = erase_in_engine(doc.name)  # the engine down: `erase_pending` retries every two minutes
+	frappe.db.commit()
+	publish(doc.name, doc.job_title, "Consent Withdrawn")
+	return {"ok": True, "erased": erased}
+
+
+@frappe.whitelist()
+def record_consent(applicant: str, source: str) -> dict:
+	"""A paper application (or any application saved without the consent box) is kept but never
+	screened. When the applicant's consent exists outside the system, HR records it with its source
+	(for example «ورقة موقّعة»); who recorded it and when are kept, and the screening starts by itself.
+	OPEN_QUESTIONS #20: default decided by Nadine on 2026-10-16, until the client confirms."""
+	from ido_talent_ai.screening import ai_ready, safe_enqueue
+
+	doc = _applicant(applicant)
+	doc.check_permission("write")
+	source = (source or "").strip()
+	if not source:
+		frappe.throw(_("The source of the consent is required, for example: a signed paper form."))
+	if doc.get("ai_consent"):
+		frappe.throw(_("This application already has consent to AI processing."))
+	if doc.get("ai_consent_withdrawn_on"):
+		frappe.throw(_("The applicant withdrew consent to AI processing; a withdrawal is final for this application."))
+	s = get_settings()
+	ready = bool(s.enabled and s.auto_screen_on_apply and ai_ready(doc.job_title))
+	version = s.consent_version or "v1"
+	frappe.db.set_value(
+		"Job Applicant", doc.name,
+		{"ai_consent": 1, "ai_consent_version": version, "ai_consent_on": now_datetime(), "ai_consent_source": source[:500],
+		 "ai_consent_recorded_by": frappe.session.user, "ai_status": "Processing" if ready else ""},
+		update_modified=False,
+	)
+	audit("applicant.consent_recorded", "Job Applicant", doc.name, doc.job_title, reason=source[:500],
+		  details={"consent_version": version, "screening_started": ready})
+	if ready:
+		frappe.db.after_commit.add(
+			lambda name=doc.name: safe_enqueue("ido_talent_ai.screening.start_screening", queue="short", applicant=name)
+		)
+	publish(doc.name, doc.job_title, "Processing" if ready else None)
+	return {"ok": True, "screening_started": ready}
 
 
 # ----------------------------------------------------------------------------- CV analysis (proxy to the engine)

@@ -93,6 +93,10 @@ class TestTalentAI(IntegrationTestCase):
 	@classmethod
 	def setUpClass(cls):
 		super().setUpClass()
+		# no real background job may leave a test: a job queued here would run on the bench's shared
+		# workers against an engine nobody serves (tests that look at the queue patch it themselves)
+		cls._no_jobs = patch.object(frappe, "enqueue")
+		cls._no_jobs.start()
 		frappe.set_user("Administrator")
 		s = frappe.get_single("AI Recruitment Settings")
 		s.enabled = 1
@@ -123,6 +127,12 @@ class TestTalentAI(IntegrationTestCase):
 		with patch.object(engine, "call", side_effect=_engine_ok):
 			profile.approve(cls.profile)
 		frappe.db.commit()
+
+	@classmethod
+	def tearDownClass(cls):
+		frappe.db.after_commit.reset()  # callbacks of the tests (screening starts) never run later
+		cls._no_jobs.stop()
+		super().tearDownClass()
 
 	def _apply(self, email, answers, **facts):
 		form = {
@@ -361,6 +371,185 @@ class TestTalentAI(IntegrationTestCase):
 		self.assertGreaterEqual(res["skipped"], 1)
 		self.assertTrue(frappe.db.exists("AI Recruitment Job", {"reference_name": other["reference"], "status": "Queued"}))
 		self.assertFalse(frappe.db.exists("AI Recruitment Job", {"reference_name": name, "status": "Queued"}))
+
+	# ------------------------------------------------------------------ consent defaults (OPEN_QUESTIONS #20, #21)
+	def _paper_application(self, tag: str) -> str:
+		"""An application entered by HR in the desk from a paper form: no consent box was ticked."""
+		doc = frappe.get_doc(
+			{"doctype": "Job Applicant", "applicant_name": "طلب ورقي", "email_id": f"paper.{tag}.{frappe.generate_hash(length=6)}@example.com",
+			 "job_title": self.opening, "designation": DESIGNATION, "status": "Open", "nationality": "Saudi Arabia", "height_cm": 180}
+		)
+		doc.append("ai_answers", {"question_key": "years_sup", "question": "سنوات الإشراف", "answer": "3", "answered": 1})
+		doc.append("ai_answers", {"question_key": "licence", "question": "الرخصة", "answer": "سارية", "answered": 1})
+		with patch.object(frappe, "enqueue"):
+			doc.insert()
+		return doc.name
+
+	def test_paper_application_waits_until_hr_records_the_consent(self):
+		"""#20: saved as usual, never screened without consent; HR records the consent with a
+		mandatory source, who and when are kept, and the screening starts by itself."""
+		name = self._paper_application("wait")
+		row = frappe.db.get_value("Job Applicant", name, ["ai_status", "ai_consent", "ai_candidate_ref"], as_dict=True)
+		self.assertEqual(row.ai_status, "Awaiting Consent")
+		self.assertFalse(row.ai_consent)
+		self.assertFalse(row.ai_candidate_ref)  # nothing of it reached the engine
+		self.assertFalse(frappe.db.exists("AI Recruitment Job", {"reference_name": name}))
+		with self.assertRaises(frappe.ValidationError):
+			screening.queue_screening(name, "Rescreen")
+		screening.start_screening(name)
+		self.assertFalse(frappe.db.exists("AI Recruitment Job", {"reference_name": name}))
+		with patch.object(engine, "call", side_effect=AssertionError("no engine call without consent")):
+			rk_engine = {"total": 0, "ranked_total": 0, "ranked": [], "groups": {}}
+			with patch.object(engine, "get", return_value=rk_engine):
+				rk = api.ranking(self.opening)
+		self.assertIn(name, [x["applicant"] for x in rk["groups"]["awaiting_consent"]])
+		self.assertNotIn(name, [x.get("applicant") for x in rk["groups"]["processing"]])
+		self.assertIsNone(next(x for x in rk["groups"]["awaiting_consent"] if x["applicant"] == name)["score"])
+		# the source is mandatory, and only HR may record it
+		with self.assertRaises(frappe.ValidationError):
+			api.record_consent(name, "   ")
+		frappe.set_user(_employee_user())
+		try:
+			with self.assertRaises(frappe.PermissionError):
+				api.record_consent(name, "ورقة موقّعة")
+		finally:
+			frappe.set_user("Administrator")
+		with patch.object(frappe, "enqueue") as enq:
+			res = api.record_consent(name, "ورقة موقّعة")
+			frappe.db.commit()  # the screening is started after the commit
+		self.assertTrue(res["screening_started"])
+		row = frappe.db.get_value(
+			"Job Applicant", name,
+			["ai_status", "ai_consent", "ai_consent_source", "ai_consent_recorded_by", "ai_consent_on", "ai_consent_version"], as_dict=True,
+		)
+		self.assertEqual((row.ai_status, row.ai_consent, row.ai_consent_source), ("Processing", 1, "ورقة موقّعة"))
+		self.assertEqual(row.ai_consent_recorded_by, "Administrator")
+		self.assertTrue(row.ai_consent_on and row.ai_consent_version)
+		started = [c.kwargs.get("applicant") for c in enq.call_args_list if c.args and c.args[0] == "ido_talent_ai.screening.start_screening"]
+		self.assertIn(name, started)
+		log = frappe.get_all("AI Recruitment Audit Log", filters={"reference_name": name, "action": "applicant.consent_recorded"},
+							 fields=["actor", "reason", "timestamp"])
+		self.assertEqual([(x.actor, x.reason) for x in log], [("Administrator", "ورقة موقّعة")])
+		self.assertTrue(log[0].timestamp)
+		with self.assertRaises(frappe.ValidationError):  # recorded once
+			api.record_consent(name, "ورقة موقّعة")
+		# from here it is screened like any other application
+		with patch.object(frappe, "enqueue"):
+			screening.start_screening(name)
+		self.assertTrue(frappe.db.exists("AI Recruitment Job", {"reference_name": name, "status": "Queued"}))
+
+	def test_withdrawn_consent_leaves_the_ranking_and_erases_the_ai_data(self):
+		"""#21: out of the ranking at once, in «مستبعد: سحب الموافقة» with no score and no details;
+		the AI data is erased in the engine and in Frappe; the application stays."""
+		res, _ = self._apply("withdraw.erase@example.com", {"years_sup": 6, "licence": "سارية"}, national_id="1000000777")
+		name = res["reference"]
+		ref = screening.ensure_candidate_ref(frappe.get_doc("Job Applicant", name))
+		result = {
+			"candidate_ref": ref, "screening_id": "scr_withdraw_1", "status": "completed", "score": 88.5, "band": "high",
+			"eligibility": "eligible", "coverage": 1.0, "rank": 1, "ranked_total": 1, "flags": [], "job_version": 1,
+			"criteria": [{"key": "supervision", "text": "الإشراف", "weight": 60, "level": 100, "source": "form_field", "evidence": "6"}],
+		}
+		with patch.object(frappe, "enqueue"):
+			screening.apply_result(result)
+		self.assertEqual(frappe.db.get_value("Job Applicant", name, "ai_score"), 88.5)
+		# a later application of the same person was grouped as its duplicate
+		copy, _ = self._apply("withdraw.copy@example.com", {"years_sup": 6, "licence": "سارية"}, national_id="1000000777")
+		frappe.db.set_value("Job Applicant", copy["reference"], "ai_duplicate_of", name)
+		sent = []
+
+		def fake(method, path, **kw):
+			sent.append((method, path, kw.get("json")))
+			if method == "PUT" and path == f"/v1/candidates/{ref}":
+				return {"consent": False, "erased": {"documents": 1, "screenings": 1, "embeddings": 1, "files": 1, "promoted": []}}
+			return _engine_ok(method, path, **kw)
+
+		with patch.object(engine, "call", side_effect=fake), patch.object(frappe, "enqueue"):
+			out = api.withdraw_consent(name, "طلب المتقدم ذلك")
+		self.assertTrue(out["erased"])
+		self.assertIn(("PUT", f"/v1/candidates/{ref}", {"consent": False}), sent)  # nothing but the withdrawal goes out
+		row = frappe.db.get_value(
+			"Job Applicant", name,
+			["ai_status", "ai_score", "ai_band", "ai_rank", "ai_assessment", "ai_consent", "ai_consent_withdrawn_on", "ai_erased_on"],
+			as_dict=True,
+		)
+		self.assertEqual(row.ai_status, "Consent Withdrawn")
+		self.assertFalse(row.ai_score or row.ai_band or row.ai_rank or row.ai_assessment or row.ai_consent)
+		self.assertTrue(row.ai_consent_withdrawn_on and row.ai_erased_on)
+		self.assertFalse(frappe.db.exists("AI Candidate Assessment", {"job_applicant": name}))
+		self.assertFalse(frappe.db.get_value("Job Applicant", copy["reference"], "ai_duplicate_of"))
+		self.assertEqual(len(frappe.get_doc("Job Applicant", name).ai_answers), 3)  # the application itself stays
+		# the audit trail keeps the actions, not the findings
+		details = frappe.get_all("AI Recruitment Audit Log", filters={"reference_name": name, "action": ["like", "screening.%"]}, pluck="details")
+		self.assertTrue(details)
+		for d in details:
+			self.assertNotIn("88.5", d)
+			self.assertIn("erased", d)
+		for action in ("applicant.consent_withdrawn", "applicant.ai_data_erased"):
+			self.assertTrue(frappe.db.exists("AI Recruitment Audit Log", {"reference_name": name, "action": action}), action)
+		# a result that arrives late is never written
+		with patch.object(frappe, "enqueue"):
+			self.assertIsNone(screening.apply_result(result))
+		self.assertFalse(frappe.db.get_value("Job Applicant", name, "ai_score"))
+		self.assertFalse(frappe.db.exists("AI Candidate Assessment", {"job_applicant": name}))
+		# out of the ranking even while the engine still lists it (its erasure pending there)
+		groups = {g: [] for g in ("not_eligible", "needs_review", "processing", "failed", "stale", "duplicate", "consent_withdrawn")}
+		engine_rk = {"total": 1, "ranked_total": 1, "groups": groups,
+					 "ranked": [{"candidate_ref": ref, "rank": 1, "score": 88.5, "band": "high", "coverage": 1.0, "status": "completed"}]}
+		with patch.object(engine, "get", return_value=engine_rk):
+			rk = api.ranking(self.opening)
+		self.assertNotIn(name, [x.get("applicant") for x in rk["ranked"]])
+		(item,) = [x for x in rk["groups"]["consent_withdrawn"] if x["applicant"] == name]
+		self.assertIsNone(item["score"])
+		self.assertTrue(item["at"])
+		self.assertEqual(item["flags"], [])
+		# no new processing, and the withdrawal is final for this application
+		with self.assertRaises(frappe.ValidationError):
+			screening.queue_screening(name, "Rescreen")
+		with self.assertRaises(frappe.ValidationError):
+			api.record_consent(name, "ورقة موقّعة")
+		with self.assertRaises(frappe.ValidationError):
+			api.withdraw_consent(name, "مرة أخرى")
+
+	def test_withdrawal_while_the_engine_is_down_is_erased_later(self):
+		res, _ = self._apply("withdraw.down@example.com", {"years_sup": 2, "licence": "سارية"}, national_id="1000000666")
+		name = res["reference"]
+		screening.ensure_candidate_ref(frappe.get_doc("Job Applicant", name))
+		with patch.object(frappe, "enqueue"):
+			job = screening.queue_screening(name, "Screening")
+		with patch.object(engine, "call", side_effect=engine.EngineUnavailable("down")), patch.object(frappe, "enqueue"):
+			out = api.withdraw_consent(name, "طلب المتقدم ذلك")
+		self.assertFalse(out["erased"])
+		self.assertEqual(frappe.db.get_value("AI Recruitment Job", job, "status"), "Cancelled")
+		self.assertEqual(frappe.db.get_value("Job Applicant", name, "ai_status"), "Consent Withdrawn")
+		self.assertFalse(frappe.db.get_value("Job Applicant", name, "ai_erased_on"))
+		# the cancelled job never runs, and a failure never puts «فشل» over «سحب الموافقة»
+		with patch.object(engine, "call", side_effect=AssertionError("must not call the engine")):
+			screening.run_job(job)
+		screening.fail(frappe.get_doc("AI Recruitment Job", job), name, "boom")
+		self.assertEqual(frappe.db.get_value("AI Recruitment Job", job, "status"), "Cancelled")
+		self.assertEqual(frappe.db.get_value("Job Applicant", name, "ai_status"), "Consent Withdrawn")
+		# the two-minute safety net erases it as soon as the engine answers
+		with patch.object(engine, "call", side_effect=_engine_ok), patch.object(frappe, "enqueue"):
+			screening.erase_pending()
+		self.assertTrue(frappe.db.get_value("Job Applicant", name, "ai_erased_on"))
+
+	def test_the_safety_nets_read_the_site_clock(self):
+		"""`creation` and `finished_on` are in the site's time zone while the database clock may be
+		UTC (it is on the local bench): rebuilding the demo found 15 applications left «Processing»
+		because the 2-minute safety net compared them with SQL now()."""
+		from frappe.utils import add_to_date, now_datetime
+
+		res, _ = self._apply("safety.net@example.com", {"years_sup": 2, "licence": "سارية"}, national_id="1000000555")
+		name = res["reference"]
+		frappe.db.delete("AI Recruitment Job", {"reference_name": name})
+		frappe.db.set_value("Job Applicant", name, {"ai_status": "Processing", "creation": add_to_date(now_datetime(), minutes=-3)}, update_modified=False)
+		screening.queue_missing()
+		self.assertTrue(frappe.db.exists("AI Recruitment Job", {"reference_name": name, "status": "Queued"}))
+		# a job that finished half an hour ago is not «finished in the last 10 minutes»
+		job = frappe.get_all("AI Recruitment Job", filters={"reference_name": name}, pluck="name")[0]
+		before = api.batch_status(self.opening)["finished_last_10_min"]
+		frappe.db.set_value("AI Recruitment Job", job, {"status": "Completed", "finished_on": add_to_date(now_datetime(), minutes=-30)})
+		self.assertEqual(api.batch_status(self.opening)["finished_last_10_min"], before)
 
 	# ------------------------------------------------------------------ the application is always saved
 	def test_application_is_always_saved(self):

@@ -305,3 +305,14 @@ Salary Range,نطاق الراتب
 Search for Jobs,ابحث عن وظيفة
 Showing,عرض
 Apply Now,قدّم الآن
+Awaiting Consent,بانتظار الموافقة
+Consent Withdrawn,سحب الموافقة
+Consent source,مصدر الموافقة
+Consent recorded by,سجّل الموافقة
+AI data erased on,تاريخ حذف بيانات الذكاء الاصطناعي
+The applicant withdrew consent to AI processing.,سحب المتقدم موافقته على المعالجة بالذكاء الاصطناعي.
+The applicant has not consented to AI processing yet: record the consent first.,لم يوافق المتقدم على المعالجة بعد: سجّل الموافقة أولًا.
+This application has no consent to AI processing to withdraw.,لا توجد موافقة على المعالجة لهذا الطلب حتى تُسحب.
+"The source of the consent is required, for example: a signed paper form.",مصدر الموافقة إلزامي، مثل: ورقة موقّعة.
+This application already has consent to AI processing.,هذا الطلب عليه موافقة على المعالجة بالفعل.
+The applicant withdrew consent to AI processing; a withdrawal is final for this application.,سحب المتقدم موافقته على المعالجة، والسحب نهائي لهذا الطلب.
