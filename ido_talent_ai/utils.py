@@ -97,3 +97,21 @@ def from_json(value: str | None, default: Any = None) -> Any:
 		return json.loads(value)
 	except (TypeError, ValueError):
 		return default
+
+
+HOME_ROUTE = "/desk/ai-recruitment"
+
+
+def on_session_creation(login_manager=None) -> None:
+	"""HR users land on «التوظيف الذكي» after login, in Arabic unless they chose another language.
+	Uses Frappe's own per-request home page flag; nothing is stored on roles or settings."""
+	try:
+		user = frappe.session.user
+		if user in ("Administrator", "Guest") or not (set(frappe.get_roles(user)) & {"HR Manager", "HR User"}):
+			return
+		frappe.local.flags.home_page = HOME_ROUTE
+		if not frappe.db.get_value("User", user, "language"):
+			frappe.db.set_value("User", user, "language", "ar", update_modified=False)
+			frappe.local.lang = "ar"
+	except Exception:
+		pass  # a landing preference must never block a login

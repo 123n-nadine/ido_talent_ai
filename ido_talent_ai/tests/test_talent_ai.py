@@ -9,6 +9,7 @@ A6 (engine down never blocks an application) and the profile approval rules."""
 from __future__ import annotations
 
 import hashlib
+import io
 import hmac
 import json
 import time
@@ -127,7 +128,10 @@ class TestTalentAI(IntegrationTestCase):
 		self.assertEqual(answers["last_job"], ("", 0))  # blank = not answered
 		self.assertEqual(doc.ai_status, "Processing")
 		self.assertEqual(doc.status, "Open")
-		# the request itself only queued a background job; that job creates the AI Recruitment Job
+		# the request only queues a background job after its commit; that job creates the AI Recruitment Job
+		self.assertFalse(enq.called)
+		with patch.object(frappe, "enqueue") as enq:
+			frappe.db.commit()
 		self.assertEqual(enq.call_args.args[0], "ido_talent_ai.screening.start_screening")
 		self.assertFalse(frappe.db.exists("AI Recruitment Job", {"reference_name": doc.name}))
 		with patch.object(frappe, "enqueue") as enq2:
@@ -324,3 +328,103 @@ class TestTalentAI(IntegrationTestCase):
 			screening.queue_screening(name, "Rescreen")
 		screening.start_screening(name)
 		self.assertFalse(frappe.db.exists("AI Recruitment Job", {"reference_name": name, "status": "Queued"}))
+
+	# ------------------------------------------------------------------ the application is always saved
+	def test_application_is_always_saved(self):
+		"""Acceptance criterion 6 as a permanent test: nothing on the AI side can lose an application."""
+		answers = {"years_sup": 3, "licence": "سارية"}
+
+		def saved(res):
+			self.assertTrue(res["ok"], res)
+			self.assertTrue(frappe.db.exists("Job Applicant", res["reference"]))
+			self.assertEqual(len(frappe.get_doc("Job Applicant", res["reference"]).ai_answers), 3)
+
+		# 1. the queue (Redis) is down when the request commits
+		with patch.object(frappe, "enqueue", side_effect=ConnectionError("queue down")):
+			res, _ = self._apply("always.queue@example.com", answers, national_id="1000088001")
+			frappe.db.commit()  # runs the after-commit enqueue, which must swallow the error
+		saved(res)
+		self.assertEqual(frappe.db.get_value("Job Applicant", res["reference"], "ai_status"), "Processing")
+		# 2. the AI hook itself crashes
+		with patch.object(screening, "data_signature", side_effect=RuntimeError("boom")):
+			res, _ = self._apply("always.hook@example.com", answers, national_id="1000088002")
+		saved(res)
+		# 3. the audit log cannot be written
+		with patch.object(api, "audit", side_effect=RuntimeError("audit down")):
+			res, _ = self._apply("always.audit@example.com", answers, national_id="1000088003")
+		saved(res)
+		# 4. a database conflict on the first attempt is retried
+		real = api._save_application
+		calls = {"n": 0}
+
+		def flaky(*a, **k):
+			calls["n"] += 1
+			if calls["n"] == 1:
+				raise frappe.QueryDeadlockError("conflict")
+			return real(*a, **k)
+
+		with patch.object(api, "_save_application", side_effect=flaky):
+			res, _ = self._apply("always.retry@example.com", answers, national_id="1000088004")
+		saved(res)
+		self.assertEqual(calls["n"], 2)
+		# 5. the AI is switched off: saved, no AI status
+		frappe.db.set_single_value("AI Recruitment Settings", "enabled", 0)
+		frappe.clear_document_cache("AI Recruitment Settings", "AI Recruitment Settings")
+		try:
+			res, _ = self._apply("always.off@example.com", answers, national_id="1000088005")
+			saved(res)
+			self.assertFalse(frappe.db.get_value("Job Applicant", res["reference"], "ai_status"))
+		finally:
+			frappe.db.set_single_value("AI Recruitment Settings", "enabled", 1)
+			frappe.clear_document_cache("AI Recruitment Settings", "AI Recruitment Settings")
+		# 6. a damaged CV: saved without the file, with a note, assessed from the answers
+		form = {
+			"job_title": self.opening, "applicant_name": "متقدم بسيرة تالفة", "email_id": "always.cv@example.com",
+			"nationality": "Saudi Arabia", "id_type": "هوية وطنية", "national_id": "1000088006", "date_of_birth": "1995-01-01",
+			"height_cm": 180, "ai_consent": 1, "answers": json.dumps(answers, ensure_ascii=False),
+		}
+		env = EnvironBuilder(method="POST", data={"cv": (io.BytesIO(b"%PDF-1.4\n" + b"\x00garbage" * 400), "broken.pdf")}).get_environ()
+		frappe.local.request = Request(env)
+		frappe.local.request_ip = "127.0.0.1"  # the public endpoint is rate limited per IP
+		frappe.local.form_dict = frappe._dict(form)
+		try:
+			with patch.object(frappe, "enqueue"):
+				res = api.apply()
+		finally:
+			frappe.local.request = None
+		saved(res)
+		doc = frappe.get_doc("Job Applicant", res["reference"])
+		self.assertFalse(doc.resume_attachment)
+		self.assertIn("broken.pdf", doc.ai_cv_note or "")
+
+	# ------------------------------------------------------------------ home page
+	def test_hr_users_land_on_the_home_page_in_arabic(self):
+		from ido_talent_ai.utils import HOME_ROUTE, on_session_creation
+
+		email = "talentai.hr.landing@example.com"
+		if not frappe.db.exists("User", email):
+			u = frappe.get_doc({"doctype": "User", "email": email, "first_name": "HR", "send_welcome_email": 0})
+			u.insert()
+			u.add_roles("HR User")
+		frappe.db.set_value("User", email, "language", "")
+		frappe.set_user(email)
+		try:
+			frappe.local.flags.home_page = None
+			on_session_creation()
+			self.assertEqual(frappe.local.flags.home_page, HOME_ROUTE)
+			self.assertEqual(frappe.db.get_value("User", email, "language"), "ar")
+			counts = api.home_counts()
+			self.assertTrue({"openings", "applicants", "processing", "needs_review", "failed"} <= set(counts))
+		finally:
+			frappe.local.flags.home_page = None
+			frappe.set_user("Administrator")
+		# a non-HR user keeps the normal landing page and cannot read the counts
+		frappe.set_user("talentai.employee.test@example.com") if frappe.db.exists("User", "talentai.employee.test@example.com") else None
+		if frappe.session.user != "Administrator":
+			try:
+				on_session_creation()
+				self.assertFalse(frappe.local.flags.home_page)
+				with self.assertRaises(frappe.PermissionError):
+					api.home_counts()
+			finally:
+				frappe.set_user("Administrator")

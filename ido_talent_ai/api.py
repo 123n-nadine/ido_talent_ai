@@ -90,6 +90,35 @@ def apply():
 		frappe.local.response.http_status_code = 422
 		return {"ok": False, "errors": errors}
 
+	# The application must always be saved (acceptance criterion 6). Database conflicts are retried,
+	# and nothing that belongs to the AI side (queue, audit, CV file) can undo the insert.
+	for attempt in range(3):
+		try:
+			doc = _save_application(op, snap, form, name, email, answers, cv, cv_bytes)
+			if not frappe.db.exists("Job Applicant", doc.name):
+				raise frappe.QueryDeadlockError("the application row was rolled back")
+			break
+		except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
+			frappe.db.rollback()
+			if attempt == 2:
+				raise
+			time.sleep(0.3 * (attempt + 1))
+	return {"ok": True, "reference": doc.name}
+
+
+def _safe_audit(*args, **kwargs) -> None:
+	try:
+		audit(*args, **kwargs)
+	except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
+		raise
+	except Exception:
+		try:
+			frappe.log_error(title="Talent AI: audit entry not written")
+		except Exception:
+			pass
+
+
+def _save_application(op, snap, form, name, email, answers, cv, cv_bytes):
 	s = get_settings()
 	doc = frappe.get_doc(
 		{
@@ -137,15 +166,17 @@ def apply():
 			).insert(ignore_permissions=True)
 			# the screening job runs after commit, so the attachment is in place before it starts
 			frappe.db.set_value("Job Applicant", doc.name, "resume_attachment", f.file_url, update_modified=False)
+		except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
+			raise  # the whole application is retried by apply()
 		except Exception as e:
 			frappe.db.rollback(save_point="talent_ai_cv")
 			frappe.clear_last_message()
 			cv_note = f"ملف السيرة «{cv.filename}» تالف أو غير آمن ولم يُحفظ ({type(e).__name__}). التقييم من الإجابات فقط."
 			frappe.db.set_value("Job Applicant", doc.name, "ai_cv_note", cv_note, update_modified=False)
-			audit("cv.rejected", "Job Applicant", doc.name, op.name, actor="Guest", details={"error": type(e).__name__})
-	audit("application.submitted", "Job Applicant", doc.name, op.name, actor="Guest",
+			_safe_audit("cv.rejected", "Job Applicant", doc.name, op.name, actor="Guest", details={"error": type(e).__name__})
+	_safe_audit("application.submitted", "Job Applicant", doc.name, op.name, actor="Guest",
 		  details={"answers": len(doc.ai_answers), "cv": bool(cv_bytes) and not cv_note, "consent_version": doc.ai_consent_version})
-	return {"ok": True, "reference": doc.name}
+	return doc
 
 
 @frappe.whitelist(allow_guest=True, methods=["GET"])
@@ -442,6 +473,23 @@ def batch_status(job_opening: str) -> dict:
 		j["applicant_name"] = frappe.db.get_value("Job Applicant", j.reference_name, "applicant_name")
 	return {**st, "finished_last_10_min": recent, "avg_duration_s": avg, "recent_jobs": jobs,
 			"title": frappe.db.get_value("Job Opening", job_opening, "job_title")}
+
+
+@frappe.whitelist()
+def home_counts() -> dict:
+	"""Live counts for the «التوظيف الذكي» home page (HR only)."""
+	require_hr()
+	rows = frappe.db.sql(
+		"""select ifnull(ai_status, '') s, count(*) n from `tabJob Applicant` group by ai_status""", as_dict=True
+	)
+	by = {r.s: r.n for r in rows}
+	return {
+		"openings": frappe.db.count("Job Opening", {"ai_enabled": 1, "status": "Open"}),
+		"applicants": sum(by.values()),
+		"processing": by.get("Processing", 0),
+		"needs_review": by.get("Needs Review", 0),
+		"failed": by.get("Failed", 0),
+	}
 
 
 @frappe.whitelist()
