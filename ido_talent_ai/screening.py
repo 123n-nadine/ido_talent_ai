@@ -191,6 +191,8 @@ def publish(applicant: str, opening: str | None, status: str | None) -> None:
 
 # ----------------------------------------------------------------------------- queueing
 def queue_screening(applicant_name: str, job_type: str = "Screening", force: bool = False) -> str:
+	if not frappe.db.get_value("Job Applicant", applicant_name, "ai_consent"):
+		frappe.throw(frappe._("The applicant withdrew consent to AI processing."))
 	s = get_settings()
 	opening = frappe.db.get_value("Job Applicant", applicant_name, "job_title")
 	job = frappe.get_doc(
@@ -259,6 +261,8 @@ def on_applicant_insert(doc, method=None):
 
 def start_screening(applicant: str) -> None:
 	"""Background: create the AI Recruitment Job of a new application (retried on conflicts)."""
+	if not frappe.db.get_value("Job Applicant", applicant, "ai_consent"):
+		return
 	if frappe.db.exists("AI Recruitment Job", {"reference_name": applicant, "status": ["in", ["Queued", "Running"]]}):
 		return
 	db_retry(queue_screening, applicant, "Screening")

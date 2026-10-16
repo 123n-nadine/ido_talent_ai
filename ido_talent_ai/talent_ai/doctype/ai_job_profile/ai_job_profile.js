@@ -32,7 +32,8 @@ frappe.ui.form.on("AI Job Criterion", {
 	},
 });
 
-const talent_ai_profile = {
+// global so tests and other scripts can reach it (Frappe evaluates form scripts in a function)
+const talent_ai_profile = (window.talent_ai_profile = {
 	total(frm) {
 		return Math.round((frm.doc.criteria || []).reduce((s, c) => s + (Number(c.weight) || 0), 0) * 10) / 10;
 	},
@@ -97,7 +98,7 @@ const talent_ai_profile = {
 				<td class="num">${x.old_rank || "—"} → <b>${x.new_rank || "—"}</b></td>
 				<td>${x.rankable ? "" : `<span class="hint">${x.eligibility === "not_eligible" ? t("غير مستوفٍ", "not eligible") : t("يحتاج مراجعة", "needs review")}</span>`}</td></tr>`).join("");
 			d.$body.html(`<div class="tai">
-				<div class="kpis"><div class="kpi"><small>${t("متقدمون", "Applicants")}</small><b>${T.N(s.applicants || 0)}</b></div><div class="kpi"><small>${t("تغيّرت درجتهم", "Score changed")}</small><b>${T.N(s.score_changed || 0)}</b></div><div class="kpi"><small>${t("تغيّرت فئتهم", "Band changed")}</small><b>${T.N(s.band_changed || 0)}</b></div><div class="kpi"><small>${t("تغيّر ترتيبهم", "Rank changed")}</small><b>${T.N(s.rank_changed || 0)}</b></div></div>
+				<div class="kpis5" style="grid-template-columns:repeat(4,minmax(0,1fr))"><div class="kpi"><small>${t("متقدمون", "Applicants")}</small><b>${T.N(s.applicants || 0)}</b></div><div class="kpi"><small>${t("تغيّرت درجتهم", "Score changed")}</small><b>${T.N(s.score_changed || 0)}</b></div><div class="kpi"><small>${t("تغيّرت فئتهم", "Band changed")}</small><b>${T.N(s.band_changed || 0)}</b></div><div class="kpi"><small>${t("تغيّر ترتيبهم", "Rank changed")}</small><b>${T.N(s.rank_changed || 0)}</b></div></div>
 				<div class="note">${t("المستويات المحكوم بها تبقى كما هي (لا يُستدعى النموذج)، وتتغيّر الأوزان والإلزامية فقط. معيار جديد يُحسب «دليل ناقص» حتى يُعاد التقييم. بعد الاعتماد تصبح النتائج الحالية «قديمة» حتى تُعاد.", "Judged levels are kept (no model call); only weights and mandatory flags change. A new criterion counts as missing evidence until re-scored. After approval current results become stale until re-scored.")}</div>
 				${rows.length ? `<table><thead><tr><th>${t("المتقدم", "Applicant")}</th><th>${t("الدرجة", "Score")}</th><th>${t("الفئة", "Band")}</th><th>${t("الترتيب", "Rank")}</th><th></th></tr></thead><tbody>${body}</tbody></table>` : `<p class="hint">${t("لا توجد نتائج مكتملة لهذا الشاغر بعد.", "No completed results for this opening yet.")}</p>`}
 				${T.disclaimer()}</div>`);
@@ -139,4 +140,4 @@ const talent_ai_profile = {
 			d.show();
 		});
 	},
-};
+});

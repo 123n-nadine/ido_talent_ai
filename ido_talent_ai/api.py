@@ -453,6 +453,60 @@ def openings() -> list[dict]:
 	)
 
 
+# ----------------------------------------------------------------------------- talent pool (feature 13)
+@frappe.whitelist()
+def talent_pool(job_opening: str, limit: int = 20) -> dict:
+	"""Past applicants suggested for this opening: hard rules first, then similarity. Suggestions
+	only: nothing is moved and no status changes."""
+	require_hr()
+	frappe.get_doc("Job Opening", job_opening).check_permission("read")
+	# the engine tenant may also hold other systems' candidates: keep this site's applicants only
+	res = engine.post("/v1/talent-pool/search", json={"job_ref": job_opening, "limit": 200}, timeout=180)
+	rows = frappe.get_all(
+		"Job Applicant", filters={"ai_candidate_ref": ["is", "set"]},
+		fields=["name", "applicant_name", "status", "job_title", "ai_candidate_ref", "creation"],
+	)
+	by_ref = {r.ai_candidate_ref: r for r in rows}
+	res["suggestions"] = [x for x in res.get("suggestions", []) if x["candidate_ref"] in by_ref][: cint(limit) or 20]
+	res["excluded"] = [x for x in res.get("excluded", []) if x["candidate_ref"] in by_ref]
+	res["counts"] = {"suggested": len(res["suggestions"]), "excluded": len(res["excluded"])}
+	titles = dict(frappe.get_all("Job Opening", fields=["name", "job_title"], as_list=True))
+
+	def enrich(x):
+		r = by_ref.get(x["candidate_ref"]) or {}
+		x["applicant"] = r.get("name")
+		x["applicant_name"] = r.get("applicant_name") or x["candidate_ref"]
+		x["hr_status"] = r.get("status")
+		x["previous_opening"] = r.get("job_title")
+		x["previous_opening_title"] = titles.get(r.get("job_title"), r.get("job_title"))
+		return x
+
+	res["suggestions"] = [enrich(x) for x in res.get("suggestions", [])]
+	res["excluded"] = [enrich(x) for x in res.get("excluded", [])]
+	res["opening_title"] = titles.get(job_opening, job_opening)
+	res["disclaimer"] = {"ar": DISCLAIMER_AR, "en": DISCLAIMER_EN}
+	audit("talent_pool.searched", "Job Opening", job_opening, job_opening,
+		  details={"suggested": len(res["suggestions"]), "excluded": len(res["excluded"])})
+	return res
+
+
+@frappe.whitelist()
+def withdraw_consent(applicant: str, reason: str) -> dict:
+	"""The applicant asked to stop the AI processing of their data: recorded by HR with a reason.
+	No new screening runs and the engine forgets the talent-pool profile."""
+	doc = _applicant(applicant)
+	doc.check_permission("write")
+	reason = (reason or "").strip()
+	if not reason:
+		frappe.throw(_("A reason is required."))
+	frappe.db.set_value("Job Applicant", doc.name, {"ai_consent": 0, "ai_consent_withdrawn_on": now_datetime()}, update_modified=False)
+	from ido_talent_ai.screening import sync_candidate
+
+	sync_candidate(doc.name)
+	audit("applicant.consent_withdrawn", "Job Applicant", doc.name, doc.job_title, reason=reason)
+	return {"ok": True}
+
+
 # ----------------------------------------------------------------------------- CV analysis (proxy to the engine)
 @frappe.whitelist()
 def cv_analysis(applicant: str) -> dict:
