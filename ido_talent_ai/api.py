@@ -460,13 +460,16 @@ def talent_pool(job_opening: str, limit: int = 20) -> dict:
 	only: nothing is moved and no status changes."""
 	require_hr()
 	frappe.get_doc("Job Opening", job_opening).check_permission("read")
-	res = engine.post("/v1/talent-pool/search", json={"job_ref": job_opening, "limit": cint(limit) or 20}, timeout=120)
-	refs = [x["candidate_ref"] for x in res.get("suggestions", [])] + [x["candidate_ref"] for x in res.get("excluded", [])]
+	# the engine tenant may also hold other systems' candidates: keep this site's applicants only
+	res = engine.post("/v1/talent-pool/search", json={"job_ref": job_opening, "limit": 200}, timeout=180)
 	rows = frappe.get_all(
-		"Job Applicant", filters={"ai_candidate_ref": ["in", refs or ["-"]]},
+		"Job Applicant", filters={"ai_candidate_ref": ["is", "set"]},
 		fields=["name", "applicant_name", "status", "job_title", "ai_candidate_ref", "creation"],
 	)
 	by_ref = {r.ai_candidate_ref: r for r in rows}
+	res["suggestions"] = [x for x in res.get("suggestions", []) if x["candidate_ref"] in by_ref][: cint(limit) or 20]
+	res["excluded"] = [x for x in res.get("excluded", []) if x["candidate_ref"] in by_ref]
+	res["counts"] = {"suggested": len(res["suggestions"]), "excluded": len(res["excluded"])}
 	titles = dict(frappe.get_all("Job Opening", fields=["name", "job_title"], as_list=True))
 
 	def enrich(x):

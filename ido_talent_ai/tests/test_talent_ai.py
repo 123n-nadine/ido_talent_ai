@@ -306,7 +306,7 @@ class TestTalentAI(IntegrationTestCase):
 		self.assertTrue(out["suggestion_only"])
 		self.assertEqual(out["suggestions"][0]["applicant"], doc.name)
 		self.assertEqual(out["suggestions"][0]["applicant_name"], "متقدم تجريبي")
-		self.assertEqual(out["excluded"][0]["applicant_name"], "JA-UNKNOWN")
+		self.assertEqual(out["excluded"], [])  # candidates of other systems in the same engine tenant are not shown
 
 	def test_withdrawn_consent_stops_processing(self):
 		res, _ = self._apply("consent.off@example.com", {"years_sup": 2, "licence": "سارية"})
