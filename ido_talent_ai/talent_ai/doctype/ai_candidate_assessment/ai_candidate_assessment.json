@@ -1,0 +1,268 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:AI-CA-{#####}",
+ "creation": "2026-10-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "job_applicant",
+  "applicant_name",
+  "job_opening",
+  "ai_profile",
+  "profile_version",
+  "column_break_main",
+  "status",
+  "eligibility",
+  "score",
+  "coverage",
+  "band",
+  "rank",
+  "ranked_total",
+  "column_break_flags",
+  "stale",
+  "stale_reason",
+  "duplicate_of",
+  "evaluated_on",
+  "summary_section",
+  "summary",
+  "flags",
+  "evidence_section",
+  "evidence",
+  "engine_section",
+  "engine_screening_id",
+  "candidate_ref",
+  "model",
+  "prompt_version",
+  "column_break_engine",
+  "input_hash",
+  "total_ms",
+  "raw_result"
+ ],
+ "fields": [
+  {
+   "fieldname": "job_applicant",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Job Applicant",
+   "options": "Job Applicant",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "job_applicant.applicant_name",
+   "fieldname": "applicant_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Applicant",
+   "read_only": 1
+  },
+  {
+   "fieldname": "job_opening",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Job Opening",
+   "options": "Job Opening"
+  },
+  {
+   "fieldname": "ai_profile",
+   "fieldtype": "Link",
+   "label": "AI Job Profile",
+   "options": "AI Job Profile"
+  },
+  {
+   "fieldname": "profile_version",
+   "fieldtype": "Int",
+   "label": "Profile version"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Processing\nCompleted\nNeeds Review\nFailed"
+  },
+  {
+   "fieldname": "eligibility",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Eligibility",
+   "options": "\neligible\nnot_eligible\nneeds_review"
+  },
+  {
+   "fieldname": "score",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Score",
+   "precision": "1"
+  },
+  {
+   "fieldname": "coverage",
+   "fieldtype": "Percent",
+   "label": "Coverage"
+  },
+  {
+   "fieldname": "band",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Band",
+   "options": "\nhigh\nmedium\nlow"
+  },
+  {
+   "fieldname": "rank",
+   "fieldtype": "Int",
+   "label": "Rank"
+  },
+  {
+   "fieldname": "ranked_total",
+   "fieldtype": "Int",
+   "label": "Ranked total"
+  },
+  {
+   "fieldname": "column_break_flags",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "stale",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Stale"
+  },
+  {
+   "fieldname": "stale_reason",
+   "fieldtype": "Data",
+   "label": "Stale reason"
+  },
+  {
+   "fieldname": "duplicate_of",
+   "fieldtype": "Link",
+   "label": "Duplicate of",
+   "options": "Job Applicant"
+  },
+  {
+   "fieldname": "evaluated_on",
+   "fieldtype": "Datetime",
+   "label": "Evaluated on"
+  },
+  {
+   "fieldname": "summary_section",
+   "fieldtype": "Section Break",
+   "label": "Summary"
+  },
+  {
+   "fieldname": "summary",
+   "fieldtype": "Text",
+   "label": "Summary"
+  },
+  {
+   "fieldname": "flags",
+   "fieldtype": "Small Text",
+   "label": "Flags"
+  },
+  {
+   "fieldname": "evidence_section",
+   "fieldtype": "Section Break",
+   "label": "Evidence"
+  },
+  {
+   "fieldname": "evidence",
+   "fieldtype": "Table",
+   "label": "Evidence",
+   "options": "AI Assessment Evidence"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "engine_section",
+   "fieldtype": "Section Break",
+   "label": "Engine"
+  },
+  {
+   "fieldname": "engine_screening_id",
+   "fieldtype": "Data",
+   "label": "Engine screening ID"
+  },
+  {
+   "fieldname": "candidate_ref",
+   "fieldtype": "Data",
+   "label": "Candidate reference"
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "label": "Model"
+  },
+  {
+   "fieldname": "prompt_version",
+   "fieldtype": "Data",
+   "label": "Prompt version"
+  },
+  {
+   "fieldname": "column_break_engine",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "input_hash",
+   "fieldtype": "Data",
+   "label": "Input hash"
+  },
+  {
+   "fieldname": "total_ms",
+   "fieldtype": "Int",
+   "label": "Processing time (ms)"
+  },
+  {
+   "fieldname": "raw_result",
+   "fieldtype": "Code",
+   "label": "Engine result",
+   "options": "JSON"
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Talent AI",
+ "name": "AI Candidate Assessment",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "delete": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager"
+  },
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User"
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "applicant_name",
+ "track_changes": 0
+}

@@ -1,0 +1,31 @@
+{
+ "app": "ido_talent_ai",
+ "creation": "2026-10-16 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon": "sparkles",
+ "icon_type": "Link",
+ "idx": 0,
+ "label": "Talent AI",
+ "link_to": "Talent AI",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-10-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "Talent AI",
+ "owner": "Administrator",
+ "parent_icon": "Frappe HR",
+ "restrict_removal": 0,
+ "roles": [
+  {
+   "role": "HR Manager"
+  },
+  {
+   "role": "HR User"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "standard": 1
+}

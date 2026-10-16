@@ -54,3 +54,6 @@ eval/reports/
 *.pyc
 node_modules
 __pycache__
+
+# Frappe build output
+ido_talent_ai/public/dist/

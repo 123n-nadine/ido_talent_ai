@@ -1,0 +1,152 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-10-16 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "criterion_key",
+  "criterion",
+  "weight",
+  "mandatory",
+  "question",
+  "description",
+  "rubric_section",
+  "rubric_0",
+  "rubric_25",
+  "rubric_50",
+  "rubric_75",
+  "rubric_100",
+  "hints_section",
+  "hint_0",
+  "hint_25",
+  "hint_50",
+  "hint_75",
+  "hint_100"
+ ],
+ "fields": [
+  {
+   "columns": 1,
+   "fieldname": "criterion_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Key",
+   "reqd": 1
+  },
+  {
+   "columns": 3,
+   "fieldname": "criterion",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Criterion",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "weight",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Weight (%)",
+   "precision": "1"
+  },
+  {
+   "columns": 1,
+   "fieldname": "mandatory",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Mandatory"
+  },
+  {
+   "columns": 2,
+   "fieldname": "question",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Fed by question (key)"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "rubric_section",
+   "fieldtype": "Section Break",
+   "label": "Rubric (written level descriptions)"
+  },
+  {
+   "fieldname": "rubric_0",
+   "fieldtype": "Small Text",
+   "in_list_view": 0,
+   "label": "Level 0"
+  },
+  {
+   "fieldname": "rubric_25",
+   "fieldtype": "Small Text",
+   "in_list_view": 0,
+   "label": "Level 25"
+  },
+  {
+   "fieldname": "rubric_50",
+   "fieldtype": "Small Text",
+   "in_list_view": 0,
+   "label": "Level 50"
+  },
+  {
+   "fieldname": "rubric_75",
+   "fieldtype": "Small Text",
+   "in_list_view": 0,
+   "label": "Level 75"
+  },
+  {
+   "fieldname": "rubric_100",
+   "fieldtype": "Small Text",
+   "in_list_view": 0,
+   "label": "Level 100"
+  },
+  {
+   "description": "Structured answers are scored in code from these hints: numbers use >= or > (e.g. > 5); selects list the answers separated by |.",
+   "fieldname": "hints_section",
+   "fieldtype": "Section Break",
+   "label": "Code hints"
+  },
+  {
+   "fieldname": "hint_0",
+   "fieldtype": "Data",
+   "label": "Hint for 0"
+  },
+  {
+   "fieldname": "hint_25",
+   "fieldtype": "Data",
+   "label": "Hint for 25"
+  },
+  {
+   "fieldname": "hint_50",
+   "fieldtype": "Data",
+   "label": "Hint for 50"
+  },
+  {
+   "fieldname": "hint_75",
+   "fieldtype": "Data",
+   "label": "Hint for 75"
+  },
+  {
+   "fieldname": "hint_100",
+   "fieldtype": "Data",
+   "label": "Hint for 100"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Talent AI",
+ "name": "AI Job Criterion",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

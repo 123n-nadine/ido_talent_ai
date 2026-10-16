@@ -1,0 +1,199 @@
+Talent AI,Talent AI
+AI Applicant Answer,إجابة المتقدم
+AI Assessment Evidence,دليل التقييم
+AI Candidate Assessment,تقييم المتقدم بالذكاء الاصطناعي
+AI Job Criterion,معيار الوظيفة
+AI Job Profile,ملف معايير الوظيفة
+AI Job Profile Version,نسخة ملف المعايير
+AI Job Question,سؤال الفرز
+AI Job Rule,شرط إلزامي
+AI Recruitment Audit Log,سجل تدقيق التوظيف الذكي
+AI Recruitment Job,مهمة الذكاء الاصطناعي
+AI Recruitment Settings,إعدادات التوظيف الذكي
+AI Ranking,ترتيب المتقدمين
+AI Batch Monitor,متابعة المعالجة
+AI Talent Pool,بنك المتقدمين
+Cycle map,خريطة الدورة
+Setup,الإعداد
+Applicants,المتقدمون
+Operations,التشغيل
+AI assessment,تقييم الذكاء الاصطناعي
+AI band,فئة الذكاء
+AI coverage,تغطية الأدلة
+AI eligibility,الأهلية (AI)
+AI evaluated on,تاريخ التقييم
+AI fields,حقول الذكاء الاصطناعي
+AI flags,علامات الذكاء
+AI links,روابط الذكاء
+AI profile approved,ملف المعايير معتمد
+AI rank,الترتيب (AI)
+AI result is stale,النتيجة قديمة
+AI score,درجة الذكاء
+AI screening enabled,تفعيل الفرز الذكي
+AI status,حالة المعالجة (AI)
+AI candidate reference,مرجع المتقدم في المحرك
+AI data hash,بصمة البيانات
+AI CV hash,بصمة السيرة
+AI draft (needs review),مسودة من الذكاء (تحتاج مراجعة)
+AI provider (owned by the engine),مزوّد الذكاء (يملكه المحرك)
+A reason is required.,السبب مطلوب.
+A template has no applicants.,القالب ليس له متقدمون.
+Add at least one criterion.,أضف معيارًا واحدًا على الأقل.
+Allowed facts,الحقائق المسموح إرسالها
+Answered,تمت الإجابة
+Applicant,المتقدم
+Approved by,اعتمدها
+Approved on,تاريخ الاعتماد
+Approved version,النسخة المعتمدة
+Attempts,المحاولات
+Auto-screen on apply,فرز تلقائي عند التقديم
+Band,الفئة
+CV level,مستوى السيرة
+CV quote,اقتباس السيرة
+Callback Secret,سر رابط النتيجة
+Callback URL,رابط النتيجة (callback)
+Candidate reference,مرجع المتقدم
+Cannot approve,لا يمكن الاعتماد
+Code hints,قواعد الكود
+Compare applicants of the same opening only.,قارن متقدمين لنفس الشاغر فقط.
+Confirmed by CV,تؤكده السيرة
+Consent given on,تاريخ الموافقة
+Consent text,نص الموافقة
+Consent text version,نسخة نص الموافقة
+Consent to AI processing,الموافقة على المعالجة
+Consent version,نسخة الموافقة
+Content hash,بصمة المحتوى
+Contradiction,تعارض
+Copied from,منسوخ من
+Could not reach the AI engine: {0},تعذّر الوصول إلى محرك الذكاء: {0}
+AI engine error {0}: {1},خطأ في محرك الذكاء {0}: {1}
+Coverage,التغطية
+Criteria,المعايير
+Criteria Draft,مسودة المعايير
+Criteria and rubric,المعايير وسُلّم التقييم
+Criteria help,شرح المعايير
+Criterion,المعيار
+Criterion '{0}' points to an unknown question '{1}'.,المعيار «{0}» يشير إلى سؤال غير موجود «{1}».
+"Criterion key '{0}' must be lowercase letters, digits or _.",مفتاح المعيار «{0}» يجب أن يكون حروفًا إنجليزية صغيرة أو أرقامًا أو _.
+Criterion keys must be unique.,مفاتيح المعايير يجب ألا تتكرر.
+Data and consent,البيانات والموافقة
+Date of Birth,تاريخ الميلاد
+Decided by,صاحب القرار
+Decided on,تاريخ القرار
+Decision reason,سبب القرار
+Duplicate of,مكرر من
+Duration (s),المدة (ث)
+Effective level,المستوى المعتمد
+Eligibility,الأهلية
+Eligibility facts,بيانات الأهلية
+Engine,المحرك
+Engine API Key,مفتاح المحرك
+Engine URL,عنوان المحرك
+Engine URL is not configured in AI Recruitment Settings,عنوان المحرك غير مضبوط في إعدادات التوظيف الذكي
+Engine result,نتيجة المحرك
+Engine screening ID,رقم الفرز في المحرك
+Engine status,حالة المحرك
+Error message,رسالة الخطأ
+Evaluated on,تاريخ التقييم
+Evidence,الأدلة
+Fact,الحقيقة
+Fed by question (key),السؤال المرتبط (المفتاح)
+Finished on,انتهى في
+Flags,العلامات
+Form level,مستوى الإجابة
+HR decision,قرار الموارد البشرية
+HR level,مستوى HR
+HTTP timeout (seconds),مهلة الاتصال (ثانية)
+Hard rules (eligibility),الشروط الإلزامية (الأهلية)
+Height (cm),الطول (سم)
+Hint for 0,قاعدة المستوى 0
+Hint for 25,قاعدة المستوى 25
+Hint for 50,قاعدة المستوى 50
+Hint for 75,قاعدة المستوى 75
+Hint for 100,قاعدة المستوى 100
+ID Token Secret,سر بصمة الهوية
+ID type,نوع الهوية
+If missing,عند غياب القيمة
+Input hash,بصمة المدخلات
+Job description,الوصف الوظيفي
+Job type,نوع المهمة
+Judge prompt,موجّه الحكم
+LLM timeout (seconds),مهلة النموذج (ثانية)
+Last synced with the engine,آخر مزامنة مع المحرك
+Level 0,المستوى 0
+Level 25,المستوى 25
+Level 50,المستوى 50
+Level 75,المستوى 75
+Level 100,المستوى 100
+Mandatory,إلزامي
+Max attempts,أقصى عدد محاولات
+Max retries,عدد المحاولات
+Missing evidence,دليل ناقص
+National ID / Iqama,رقم الهوية / الإقامة
+Nationality,الجنسية
+Needs Review,يحتاج مراجعة
+OCR provider,مزوّد قراءة الصور (OCR)
+Only HR Manager or HR User can do this.,هذا الإجراء لمدير أو أخصائي الموارد البشرية فقط.
+Operator,المعامل
+Options (one per line),الخيارات (خيار في كل سطر)
+Override by,عدّلها
+Override reason,سبب التعديل
+Processing time (ms),زمن المعالجة (مللي ثانية)
+Profile version,نسخة المعايير
+Prompt version,نسخة الموجّه
+Question '{0}' needs options.,السؤال «{0}» يحتاج خيارات.
+Question (Arabic),السؤال (عربي)
+Question (English),السؤال (إنجليزي)
+"Question key '{0}' must be lowercase letters, digits or _.",مفتاح السؤال «{0}» يجب أن يكون حروفًا إنجليزية صغيرة أو أرقامًا أو _.
+Ranked total,عدد المرتَّبين
+Reference DocType,نوع المرجع
+Requirement,الشرط
+Rescreen,إعادة تقييم
+Retention (days),مدة الاحتفاظ (يوم)
+Rubric (written level descriptions),سُلّم التقييم (وصف مكتوب لكل مستوى)
+Rule value '{0}' is not valid for {1}.,قيمة الشرط «{0}» غير صالحة لـ {1}.
+Rules,الشروط
+Screening,فرز
+Screening answers,إجابات الفرز
+Screening questions,أسئلة الفرز
+Select 2 or 3 applicants.,اختر متقدمَين أو ثلاثة.
+Snapshot,لقطة
+Stale,قديم
+Stale reason,سبب القِدم
+Started on,بدأ في
+Talent Pool,بنك المتقدمين
+Template for the designation,قالب للمسمى الوظيفي
+The engine refused the settings: {0},رفض المحرك الإعدادات: {0}
+The weights must total 100% (now {0}%).,مجموع الأوزان يجب أن يكون 100% (الآن {0}%).
+This Job Opening already has an AI Job Profile.,لهذا الشاغر ملف معايير بالفعل.
+This applicant has not been sent to the AI engine yet.,لم يُرسل هذا المتقدم إلى محرك الذكاء بعد.
+This job does not accept applications through this form.,هذه الوظيفة لا تستقبل الطلبات من هذا النموذج.
+This job is not open for applications.,هذه الوظيفة غير مفتوحة للتقديم.
+Total weight (%),مجموع الأوزان (%)
+Unknown status,حالة غير معروفة
+Versions,النسخ
+Weight (%),الوزن (%)
+Weight (kg),الوزن (كجم)
+Weights,الأوزان
+Queued on,أُضيف في
+Queued,في الانتظار
+Running,قيد التشغيل
+Processing,جاري المعالجة
+nationality,الجنسية
+height_cm,الطول (سم)
+weight_kg,الوزن (كجم)
+age,العمر
+between,بين
+not_in,ليس ضمن
+eligible,مستوفٍ
+not_eligible,غير مستوفٍ
+needs_review,يحتاج مراجعة
+high,مرتفعة
+medium,متوسطة
+low,منخفضة
+form_field,إجابة النموذج
+cv_quote,من السيرة
+hr_override,تعديل HR
+multiselect,اختيار متعدد
+Re-score,إعادة التقييم
+Decision,القرار

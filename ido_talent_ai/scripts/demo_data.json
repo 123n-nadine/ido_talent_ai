@@ -1,0 +1,996 @@
+{
+ "_note": "Synthetic, fictional data only (names, IDs, e-mails). Used by seed_demo.py and submit_demo_applications.py.",
+ "company": {
+  "name": "شركة الحراسات التجريبية",
+  "abbr": "TST"
+ },
+ "designation": "مشرف أمن",
+ "opening": {
+  "job_title": "مشرف أمن — الرياض",
+  "location": "الرياض",
+  "description": "الإشراف اليومي على أفراد الأمن في الموقع، توزيع الورديات وإعداد جداول المناوبة، متابعة الالتزام بالإجراءات الأمنية، كتابة التقارير الأمنية وتقارير الحوادث، والتنسيق مع إدارة العمليات والجهات المختصة عند الحاجة."
+ },
+ "profile": {
+  "title": "مشرف أمن",
+  "description": "الإشراف اليومي على أفراد الأمن في الموقع، توزيع الورديات وإعداد جداول المناوبة، متابعة الالتزام بالإجراءات الأمنية، كتابة التقارير الأمنية وتقارير الحوادث، والتنسيق مع إدارة العمليات والجهات المختصة عند الحاجة.",
+  "criteria": [
+   {
+    "criterion_key": "supervision",
+    "criterion": "خبرة الإشراف على أفراد الأمن",
+    "weight": 30,
+    "mandatory": 1,
+    "question": "years_sup",
+    "rubric_0": "لا يوجد",
+    "rubric_25": "أقل من سنة",
+    "rubric_50": "1–2 سنة",
+    "rubric_75": "3–5 سنوات",
+    "rubric_100": "أكثر من 5",
+    "hint_0": "",
+    "hint_25": "> 0",
+    "hint_50": ">= 1",
+    "hint_75": "> 2",
+    "hint_100": "> 5"
+   },
+   {
+    "criterion_key": "security_exp",
+    "criterion": "الخبرة الأمنية العامة",
+    "weight": 20,
+    "mandatory": 1,
+    "question": "years_sec",
+    "rubric_0": "لا يوجد",
+    "rubric_25": "أقل من سنة",
+    "rubric_50": "1–2 سنة",
+    "rubric_75": "3–5 سنوات",
+    "rubric_100": "أكثر من 5",
+    "hint_0": "",
+    "hint_25": "> 0",
+    "hint_50": ">= 1",
+    "hint_75": "> 2",
+    "hint_100": "> 5"
+   },
+   {
+    "criterion_key": "shifts",
+    "criterion": "إدارة الورديات وجداول المناوبة",
+    "weight": 15,
+    "mandatory": 0,
+    "question": "shifts",
+    "rubric_0": "لا",
+    "rubric_25": "—",
+    "rubric_50": "شاركت",
+    "rubric_75": "—",
+    "rubric_100": "أعددتها بنفسي",
+    "hint_0": "لا",
+    "hint_25": "",
+    "hint_50": "شاركت",
+    "hint_75": "",
+    "hint_100": "أعددتها بنفسي"
+   },
+   {
+    "criterion_key": "licence",
+    "criterion": "رخصة حارس أمن",
+    "weight": 15,
+    "mandatory": 0,
+    "question": "licence",
+    "rubric_0": "لا",
+    "rubric_25": "—",
+    "rubric_50": "منتهية أو قيد الإصدار",
+    "rubric_75": "—",
+    "rubric_100": "سارية",
+    "hint_0": "لا",
+    "hint_25": "",
+    "hint_50": "منتهية أو قيد الإصدار",
+    "hint_75": "",
+    "hint_100": "سارية"
+   },
+   {
+    "criterion_key": "reports",
+    "criterion": "كتابة التقارير الأمنية",
+    "weight": 8,
+    "mandatory": 0,
+    "question": "reports",
+    "rubric_0": "لا",
+    "rubric_25": "—",
+    "rubric_50": "أحيانًا",
+    "rubric_75": "—",
+    "rubric_100": "بانتظام",
+    "hint_0": "لا",
+    "hint_25": "",
+    "hint_50": "أحيانًا",
+    "hint_75": "",
+    "hint_100": "بانتظام"
+   },
+   {
+    "criterion_key": "first_aid",
+    "criterion": "إسعافات أولية أو سلامة",
+    "weight": 7,
+    "mandatory": 0,
+    "question": "first_aid",
+    "rubric_0": "لا",
+    "rubric_25": "—",
+    "rubric_50": "أقدم من سنتين",
+    "rubric_75": "—",
+    "rubric_100": "حديثة",
+    "hint_0": "لا",
+    "hint_25": "",
+    "hint_50": "أقدم من سنتين",
+    "hint_75": "",
+    "hint_100": "حديثة"
+   },
+   {
+    "criterion_key": "languages",
+    "criterion": "اللغات",
+    "weight": 5,
+    "mandatory": 0,
+    "question": "languages",
+    "rubric_0": "لا شيء",
+    "rubric_25": "—",
+    "rubric_50": "العربية فقط",
+    "rubric_75": "—",
+    "rubric_100": "العربية والإنجليزية",
+    "hint_0": "",
+    "hint_25": "",
+    "hint_50": "العربية",
+    "hint_75": "",
+    "hint_100": "العربية | الإنجليزية"
+   }
+  ],
+  "rules": [
+   {
+    "fact": "nationality",
+    "operator": "in",
+    "value": "Saudi Arabia"
+   },
+   {
+    "fact": "height_cm",
+    "operator": ">=",
+    "value": "180"
+   },
+   {
+    "fact": "weight_kg",
+    "operator": "<=",
+    "value": "80"
+   },
+   {
+    "fact": "age",
+    "operator": ">=",
+    "value": "21"
+   }
+  ],
+  "questions": [
+   {
+    "question_key": "edu",
+    "label": "أعلى مؤهل دراسي",
+    "label_en": "Highest qualification",
+    "question_type": "select",
+    "options": "ثانوي\nدبلوم\nبكالوريوس\nأعلى",
+    "required": 1,
+    "hint": null
+   },
+   {
+    "question_key": "years_sec",
+    "label": "عدد سنوات الخبرة في المجال الأمني",
+    "label_en": "Years of experience in security",
+    "question_type": "number",
+    "options": "",
+    "required": 0,
+    "hint": "اكتب 0 إذا لا توجد خبرة. الفراغ يعني لم يُجب"
+   },
+   {
+    "question_key": "years_sup",
+    "label": "عدد سنوات الخبرة في الإشراف على أفراد أمن",
+    "label_en": "Years supervising security guards",
+    "question_type": "number",
+    "options": "",
+    "required": 0,
+    "hint": "اكتب 0 إذا لا توجد خبرة. الفراغ يعني لم يُجب"
+   },
+   {
+    "question_key": "max_team",
+    "label": "أكبر عدد من الأفراد أشرفت عليهم",
+    "label_en": "Largest team you supervised",
+    "question_type": "number",
+    "options": "",
+    "required": 0,
+    "hint": null
+   },
+   {
+    "question_key": "shifts",
+    "label": "هل أعددت جداول مناوبة أو وزّعت ورديات؟",
+    "label_en": "Did you prepare rosters or allocate shifts?",
+    "question_type": "select",
+    "options": "لا\nشاركت\nأعددتها بنفسي",
+    "required": 1,
+    "hint": null
+   },
+   {
+    "question_key": "licence",
+    "label": "هل لديك رخصة حارس أمن؟",
+    "label_en": "Do you hold a security guard licence?",
+    "question_type": "select",
+    "options": "لا\nمنتهية أو قيد الإصدار\nسارية",
+    "required": 1,
+    "hint": null
+   },
+   {
+    "question_key": "licence_exp",
+    "label": "تاريخ انتهاء الرخصة",
+    "label_en": "Licence expiry date",
+    "question_type": "date",
+    "options": "",
+    "required": 0,
+    "hint": null
+   },
+   {
+    "question_key": "reports",
+    "label": "هل تكتب تقارير أمنية أو تسجّل الحوادث؟",
+    "label_en": "Do you write security reports or log incidents?",
+    "question_type": "select",
+    "options": "لا\nأحيانًا\nبانتظام",
+    "required": 1,
+    "hint": null
+   },
+   {
+    "question_key": "first_aid",
+    "label": "دورة إسعافات أولية أو سلامة",
+    "label_en": "First aid or safety course",
+    "question_type": "select",
+    "options": "لا\nأقدم من سنتين\nحديثة",
+    "required": 1,
+    "hint": null
+   },
+   {
+    "question_key": "languages",
+    "label": "اللغات",
+    "label_en": "Languages",
+    "question_type": "multiselect",
+    "options": "العربية\nالإنجليزية\nأخرى",
+    "required": 0,
+    "hint": null
+   },
+   {
+    "question_key": "last_job",
+    "label": "صف آخر عمل في سطرين",
+    "label_en": "Describe your last job in two lines",
+    "question_type": "text",
+    "options": "",
+    "required": 0,
+    "hint": null
+   }
+  ]
+ },
+ "applicants": [
+  {
+   "key": "HR-APP-2026-2001",
+   "applicant_name": "فهد العتيبي",
+   "email_id": "applicant.2001@example.com",
+   "phone_number": "05200101002",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002001",
+   "age": 34,
+   "height_cm": 183,
+   "weight_kg": 78,
+   "answers": {
+    "edu": "دبلوم",
+    "years_sec": 9,
+    "years_sup": 7,
+    "max_team": 14,
+    "shifts": "أعددتها بنفسي",
+    "licence": "سارية",
+    "licence_exp": "2027-06-30",
+    "reports": "بانتظام",
+    "first_aid": "حديثة",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "مشرف أمن في شركة حراسات خاصة بالرياض منذ 2017."
+   },
+   "note": "strong",
+   "cv": "HR-APP-2026-2001.pdf"
+  },
+  {
+   "key": "HR-APP-2026-2002",
+   "applicant_name": "سلطان الحربي",
+   "email_id": "applicant.2002@example.com",
+   "phone_number": "05200202002",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002002",
+   "age": 29,
+   "height_cm": 181,
+   "weight_kg": 79,
+   "answers": {
+    "edu": "ثانوي",
+    "years_sec": 6,
+    "years_sup": 4,
+    "max_team": 8,
+    "shifts": "أعددتها بنفسي",
+    "licence": "سارية",
+    "licence_exp": "2027-02-28",
+    "reports": "أحيانًا",
+    "first_aid": "لا",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "مشرف وردية في مجمع سكني كبير بالرياض منذ 2019، أتابع 8 حراس."
+   },
+   "note": "worked example: 81.5",
+   "cv": "HR-APP-2026-2002.jpg"
+  },
+  {
+   "key": "HR-APP-2026-2003",
+   "applicant_name": "خالد الدوسري",
+   "email_id": "applicant.2003@example.com",
+   "phone_number": "05200303002",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002003",
+   "age": 31,
+   "height_cm": 185,
+   "weight_kg": 80,
+   "answers": {
+    "edu": "بكالوريوس",
+    "years_sec": 7,
+    "years_sup": 6,
+    "max_team": 11,
+    "shifts": "شاركت",
+    "licence": "سارية",
+    "licence_exp": "2026-12-15",
+    "reports": "بانتظام",
+    "first_aid": "أقدم من سنتين",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "مشرف أمن في مركز لوجستي بالرياض منذ 2018."
+   },
+   "note": "strong",
+   "cv": null
+  },
+  {
+   "key": "HR-APP-2026-2004",
+   "applicant_name": "عبدالله الشمري",
+   "email_id": "applicant.2004@example.com",
+   "phone_number": "05200404002",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002004",
+   "age": 27,
+   "height_cm": 180,
+   "weight_kg": 77,
+   "answers": {
+    "edu": "ثانوي",
+    "years_sec": 5,
+    "years_sup": 1,
+    "max_team": 6,
+    "shifts": "شاركت",
+    "licence": "سارية",
+    "licence_exp": "2027-09-01",
+    "reports": "بانتظام",
+    "first_aid": "لا",
+    "languages": [
+     "العربية"
+    ],
+    "last_job": "فرد أمن أول في مستشفى خاص بالرياض منذ 2020."
+   },
+   "note": "medium",
+   "cv": null
+  },
+  {
+   "key": "HR-APP-2026-2005",
+   "applicant_name": "ماجد القحطاني",
+   "email_id": "applicant.2005@example.com",
+   "phone_number": "05200505002",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002005",
+   "age": 30,
+   "height_cm": 182,
+   "weight_kg": 74,
+   "answers": {
+    "edu": "ثانوي",
+    "years_sec": 5,
+    "years_sup": 0.5,
+    "max_team": 4,
+    "shifts": "لا",
+    "licence": "سارية",
+    "licence_exp": "2027-01-10",
+    "reports": "أحيانًا",
+    "first_aid": "حديثة",
+    "languages": "",
+    "last_job": ""
+   },
+   "note": "low; languages blank = not answered",
+   "cv": "HR-APP-2026-2005.docx"
+  },
+  {
+   "key": "HR-APP-2026-2006",
+   "applicant_name": "نايف الزهراني",
+   "email_id": "applicant.2006@example.com",
+   "phone_number": "05200606002",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002006",
+   "age": 35,
+   "height_cm": 186,
+   "weight_kg": 79,
+   "answers": {
+    "edu": "بكالوريوس",
+    "years_sec": 0,
+    "years_sup": 0,
+    "max_team": 0,
+    "shifts": "لا",
+    "licence": "لا",
+    "reports": "لا",
+    "first_aid": "لا",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "مندوب مبيعات في شركة اتصالات بالرياض منذ 2016."
+   },
+   "note": "0 is a real answer",
+   "cv": null
+  },
+  {
+   "key": "HR-APP-2026-2007",
+   "applicant_name": "Omar Al-Mutairi",
+   "email_id": "applicant.2007@example.com",
+   "phone_number": "05200707002",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002007",
+   "age": 26,
+   "height_cm": 181,
+   "weight_kg": 72,
+   "answers": {
+    "edu": "بكالوريوس",
+    "years_sec": 0,
+    "years_sup": 0,
+    "max_team": 0,
+    "shifts": "لا",
+    "licence": "لا",
+    "reports": "لا",
+    "first_aid": "لا",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "Backend developer at a fintech startup in Riyadh since 2021."
+   },
+   "note": "0 is a real answer",
+   "cv": "HR-APP-2026-2007.pdf"
+  },
+  {
+   "key": "HR-APP-2026-2008",
+   "applicant_name": "بندر السبيعي",
+   "email_id": "applicant.2008@example.com",
+   "phone_number": "05200808002",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002008",
+   "age": 38,
+   "height_cm": 181,
+   "weight_kg": 78,
+   "answers": {
+    "edu": "دبلوم",
+    "years_sec": 11,
+    "years_sup": 9,
+    "max_team": 20,
+    "shifts": "أعددتها بنفسي",
+    "licence": "منتهية أو قيد الإصدار",
+    "reports": "بانتظام",
+    "first_aid": "حديثة",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "مشرف أمن في منشأة صناعية بالجبيل من 2016 حتى 2025."
+   },
+   "note": "expired licence; the public form requires height when the opening has a height rule",
+   "cv": "HR-APP-2026-2008.pdf"
+  },
+  {
+   "key": "HR-APP-2026-2009",
+   "applicant_name": "يوسف العنزي",
+   "email_id": "applicant.2009@example.com",
+   "phone_number": "05200909002",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002009",
+   "age": 28,
+   "height_cm": 180,
+   "weight_kg": 75,
+   "answers": {
+    "edu": "ثانوي",
+    "years_sec": 6,
+    "years_sup": "",
+    "max_team": "",
+    "shifts": "لا",
+    "licence": "لا",
+    "reports": "لا",
+    "first_aid": "لا",
+    "languages": [
+     "العربية"
+    ],
+    "last_job": ""
+   },
+   "note": "supervision and team size left blank -> missing evidence on a mandatory criterion",
+   "cv": "HR-APP-2026-2009.docx"
+  },
+  {
+   "key": "HR-APP-2026-2010",
+   "applicant_name": "سعد المالكي",
+   "email_id": "applicant.2010@example.com",
+   "phone_number": "05201000102",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002010",
+   "age": 32,
+   "height_cm": 172,
+   "weight_kg": 70,
+   "answers": {
+    "edu": "دبلوم",
+    "years_sec": 8,
+    "years_sup": 7,
+    "max_team": 9,
+    "shifts": "أعددتها بنفسي",
+    "licence": "سارية",
+    "licence_exp": "2028-05-20",
+    "reports": "أحيانًا",
+    "first_aid": "حديثة",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "مشرف أمن في فندق بمكة المكرمة منذ 2017."
+   },
+   "note": "height 172 -> not eligible",
+   "cv": "HR-APP-2026-2010.pdf"
+  },
+  {
+   "key": "HR-APP-2026-2011",
+   "applicant_name": "أحمد حسن",
+   "email_id": "applicant.2011@example.com",
+   "phone_number": "05201101102",
+   "nationality": "Egypt",
+   "id_type": "إقامة",
+   "national_id": "2000002011",
+   "age": 36,
+   "height_cm": 183,
+   "weight_kg": 79,
+   "answers": {
+    "edu": "بكالوريوس",
+    "years_sec": 8,
+    "years_sup": 7,
+    "max_team": 12,
+    "shifts": "أعددتها بنفسي",
+    "licence": "لا",
+    "reports": "بانتظام",
+    "first_aid": "لا",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "Security shift supervisor at a shopping mall in Cairo, 2015–2023."
+   },
+   "note": "nationality -> not eligible",
+   "cv": null
+  },
+  {
+   "key": "HR-APP-2026-2012",
+   "applicant_name": "محمد الشهري",
+   "email_id": "applicant.2012@example.com",
+   "phone_number": "05201202102",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002012",
+   "age": 33,
+   "height_cm": 184,
+   "weight_kg": 78,
+   "answers": {
+    "edu": "دبلوم",
+    "years_sec": 7,
+    "years_sup": 6,
+    "max_team": 10,
+    "shifts": "أعددتها بنفسي",
+    "licence": "سارية",
+    "licence_exp": "2027-11-01",
+    "reports": "بانتظام",
+    "first_aid": "لا",
+    "languages": [
+     "العربية"
+    ],
+    "last_job": "مشرف أمن في مجمع تجاري بالخبر."
+   },
+   "note": "contradiction appears when his CV is attached (phase 2)",
+   "cv": "HR-APP-2026-2012.pdf"
+  },
+  {
+   "key": "HR-APP-2026-2013",
+   "applicant_name": "فيصل العمري",
+   "email_id": "applicant.2013@example.com",
+   "phone_number": "05201303102",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002013",
+   "age": 30,
+   "height_cm": 181,
+   "weight_kg": 76,
+   "answers": {
+    "edu": "ثانوي",
+    "years_sec": 4,
+    "years_sup": 2,
+    "max_team": 5,
+    "shifts": "شاركت",
+    "licence": "سارية",
+    "licence_exp": "2027-04-04",
+    "reports": "أحيانًا",
+    "first_aid": "أقدم من سنتين",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "مشرف مساعد في موقع إنشائي بالرياض."
+   },
+   "note": "corrupt PDF: the platform refuses the file, the application is saved and assessed from the answers",
+   "cv": "HR-APP-2026-2013.pdf"
+  },
+  {
+   "key": "HR-APP-2026-2014",
+   "applicant_name": "طلال الحارثي",
+   "email_id": "applicant.2014@example.com",
+   "phone_number": "05201404102",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002014",
+   "age": 28,
+   "height_cm": 182,
+   "weight_kg": 77,
+   "answers": {
+    "edu": "دبلوم",
+    "years_sec": 5,
+    "years_sup": 3,
+    "max_team": 7,
+    "shifts": "شاركت",
+    "licence": "سارية",
+    "licence_exp": "2028-01-01",
+    "reports": "بانتظام",
+    "first_aid": "حديثة",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "مشرف وردية في مستودع بالرياض."
+   },
+   "note": "processing snapshot in the demo",
+   "cv": "HR-APP-2026-2014.pdf"
+  },
+  {
+   "key": "HR-APP-2026-2015",
+   "applicant_name": "حسن القرني",
+   "email_id": "applicant.2015@example.com",
+   "phone_number": "05201505102",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002015",
+   "age": 29,
+   "height_cm": 181,
+   "weight_kg": 79,
+   "answers": {
+    "edu": "ثانوي",
+    "years_sec": 3,
+    "years_sup": 1,
+    "max_team": 3,
+    "shifts": "لا",
+    "licence": "سارية",
+    "licence_exp": "2027-07-07",
+    "reports": "لا",
+    "first_aid": "لا",
+    "languages": [
+     "العربية"
+    ],
+    "last_job": "حارس أمن في بنك بالرياض."
+   },
+   "note": "original of the duplicate pair",
+   "cv": null
+  },
+  {
+   "key": "HR-APP-2026-2016",
+   "applicant_name": "حسن القرني",
+   "email_id": "hassan.q.second@example.com",
+   "phone_number": "05201606102",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002015",
+   "age": 29,
+   "height_cm": 181,
+   "weight_kg": 79,
+   "answers": {
+    "edu": "ثانوي",
+    "years_sec": 3,
+    "years_sup": 1,
+    "max_team": 3,
+    "shifts": "لا",
+    "licence": "سارية",
+    "licence_exp": "2027-07-07",
+    "reports": "لا",
+    "first_aid": "لا",
+    "languages": [
+     "العربية"
+    ],
+    "last_job": "حارس أمن في بنك بالرياض."
+   },
+   "note": "duplicate (same id_token as 2015)",
+   "cv": null
+  },
+  {
+   "key": "HR-APP-2026-2017",
+   "applicant_name": "تركي العسيري",
+   "email_id": "applicant.2017@example.com",
+   "phone_number": "05201707102",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002017",
+   "age": 33,
+   "height_cm": 182,
+   "weight_kg": 76,
+   "answers": {
+    "edu": "دبلوم",
+    "years_sec": 6,
+    "years_sup": 4,
+    "max_team": 10,
+    "shifts": "شاركت",
+    "licence": "سارية",
+    "licence_exp": "2028-03-01",
+    "reports": "بانتظام",
+    "first_aid": "لا",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "مشرف أمن في مجمع تجاري بالرياض."
+   },
+   "note": "the applicant submitted during the demo tour",
+   "cv": null
+  },
+  {
+   "key": "HR-APP-2026-2018",
+   "applicant_name": "راكان الغامدي",
+   "email_id": "applicant.2018@example.com",
+   "phone_number": "05201808102",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002018",
+   "age": 36,
+   "height_cm": 182,
+   "weight_kg": 79,
+   "answers": {
+    "edu": "دبلوم",
+    "years_sec": 8,
+    "years_sup": 7,
+    "max_team": 12,
+    "shifts": "أعددتها بنفسي",
+    "licence": "سارية",
+    "licence_exp": "2028-02-01",
+    "reports": "بانتظام",
+    "first_aid": "حديثة",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "مشرف أمن في مستشفى حكومي بالرياض منذ 2018، أشرف على 12 فرد أمن."
+   },
+   "note": "strong, Word CV",
+   "cv": "HR-APP-2026-2018.docx"
+  },
+  {
+   "key": "HR-APP-2026-2019",
+   "applicant_name": "زياد البلوي",
+   "email_id": "applicant.2019@example.com",
+   "phone_number": "05201909102",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002019",
+   "age": 27,
+   "height_cm": 181,
+   "weight_kg": 75,
+   "answers": {
+    "edu": "ثانوي",
+    "years_sec": 4,
+    "years_sup": 1,
+    "max_team": 5,
+    "shifts": "شاركت",
+    "licence": "سارية",
+    "licence_exp": "2027-03-01",
+    "reports": "أحيانًا",
+    "first_aid": "لا",
+    "languages": [
+     "العربية"
+    ],
+    "last_job": "حارس أمن أول في جامعة بالرياض منذ 2021."
+   },
+   "note": "medium, scanned CV image",
+   "cv": "HR-APP-2026-2019.jpg"
+  },
+  {
+   "key": "HR-APP-2026-2020",
+   "applicant_name": "مازن الشهراني",
+   "email_id": "applicant.2020@example.com",
+   "phone_number": "05202000202",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002020",
+   "age": 33,
+   "height_cm": 183,
+   "weight_kg": 92,
+   "answers": {
+    "edu": "دبلوم",
+    "years_sec": 9,
+    "years_sup": 5,
+    "max_team": 12,
+    "shifts": "أعددتها بنفسي",
+    "licence": "سارية",
+    "licence_exp": "2028-02-01",
+    "reports": "بانتظام",
+    "first_aid": "حديثة",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "مشرف أمن في مجمع سكني بالدمام."
+   },
+   "note": "weight 92 > 80 -> not eligible, no CV",
+   "cv": null
+  },
+  {
+   "key": "HR-APP-2026-2021",
+   "applicant_name": "إبراهيم الأحمدي",
+   "email_id": "applicant.2021@example.com",
+   "phone_number": "05202101202",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002021",
+   "age": 31,
+   "height_cm": 180,
+   "weight_kg": 78,
+   "answers": {
+    "edu": "ثانوي",
+    "years_sec": 6,
+    "years_sup": "",
+    "max_team": "",
+    "shifts": "شاركت",
+    "licence": "سارية",
+    "licence_exp": "2027-08-01",
+    "reports": "بانتظام",
+    "first_aid": "لا",
+    "languages": [
+     "العربية"
+    ],
+    "last_job": ""
+   },
+   "note": "mandatory supervision answer left blank -> needs review, no CV",
+   "cv": null
+  },
+  {
+   "key": "HR-APP-2026-2022",
+   "applicant_name": "Abdulaziz Al-Otaibi",
+   "email_id": "applicant.2022@example.com",
+   "phone_number": "05202202202",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002022",
+   "age": 34,
+   "height_cm": 184,
+   "weight_kg": 80,
+   "answers": {
+    "edu": "دبلوم",
+    "years_sec": 10,
+    "years_sup": 9,
+    "max_team": 18,
+    "shifts": "أعددتها بنفسي",
+    "licence": "سارية",
+    "licence_exp": "2028-02-01",
+    "reports": "بانتظام",
+    "first_aid": "حديثة",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "Security supervisor at a logistics park in Riyadh since 2016."
+   },
+   "note": "strong, English PDF CV",
+   "cv": "HR-APP-2026-2022.pdf"
+  },
+  {
+   "key": "HR-APP-2026-2023",
+   "applicant_name": "وليد العنزي",
+   "email_id": "applicant.2023@example.com",
+   "phone_number": "05202303202",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002023",
+   "age": 19,
+   "height_cm": 181,
+   "weight_kg": 70,
+   "answers": {
+    "edu": "ثانوي",
+    "years_sec": 1,
+    "years_sup": 0,
+    "max_team": 0,
+    "shifts": "لا",
+    "licence": "منتهية أو قيد الإصدار",
+    "reports": "لا",
+    "first_aid": "حديثة",
+    "languages": [
+     "العربية"
+    ],
+    "last_job": "حارس أمن متدرب في معرض تجاري."
+   },
+   "note": "age 19 < 21 -> not eligible, no CV",
+   "cv": null
+  },
+  {
+   "key": "HR-APP-2026-2024",
+   "applicant_name": "خالد الدوسري",
+   "email_id": "khaled.d.second@example.com",
+   "phone_number": "05202404202",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002003",
+   "age": 31,
+   "height_cm": 185,
+   "weight_kg": 80,
+   "answers": {
+    "edu": "بكالوريوس",
+    "years_sec": 7,
+    "years_sup": 6,
+    "max_team": 11,
+    "shifts": "شاركت",
+    "licence": "سارية",
+    "licence_exp": "2026-12-15",
+    "reports": "بانتظام",
+    "first_aid": "أقدم من سنتين",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "مشرف أمن في مركز لوجستي بالرياض منذ 2018."
+   },
+   "note": "duplicate: same national ID as HR-APP-2026-2003, another e-mail",
+   "cv": null
+  },
+  {
+   "key": "HR-APP-2026-2025",
+   "applicant_name": "عبدالمجيد الرويلي",
+   "email_id": "applicant.2025@example.com",
+   "phone_number": "05202505202",
+   "nationality": "Saudi Arabia",
+   "id_type": "هوية وطنية",
+   "national_id": "1000002025",
+   "age": 32,
+   "height_cm": 182,
+   "weight_kg": 77,
+   "answers": {
+    "edu": "دبلوم",
+    "years_sec": 7,
+    "years_sup": 6,
+    "max_team": 10,
+    "shifts": "أعددتها بنفسي",
+    "licence": "سارية",
+    "licence_exp": "2027-12-01",
+    "reports": "بانتظام",
+    "first_aid": "لا",
+    "languages": [
+     "العربية",
+     "الإنجليزية"
+    ],
+    "last_job": "مشرف أمن في مجمع مكاتب بالرياض منذ 2019."
+   },
+   "note": "strong, scanned CV image",
+   "cv": "HR-APP-2026-2025.jpg"
+  }
+ ]
+}
