@@ -18,7 +18,7 @@ frappe.pages["ai-talent-pool"].on_page_load = function (wrapper) {
 	$body.html(`<div class="card"><p class="hint">${T.t("اختر شاغرًا ثم ابحث.", "Pick an opening, then search.")}</p></div>`);
 
 	const ELIG = (e) => T.chipElig(e);
-	const REASON = { consent_withdrawn: "red", retention_expired: "red", already_applied: "", not_eligible: "amber", duplicate: "" };
+	const REASON = { consent_withdrawn: "red", retention_expired: "red", already_applied: "grey", not_eligible: "red", duplicate: "grey" };
 
 	function load() {
 		if (!state.opening) return;
@@ -36,18 +36,19 @@ frappe.pages["ai-talent-pool"].on_page_load = function (wrapper) {
 		const sug = d.suggestions.map((x, i) => {
 			const p = x.previous || {};
 			const pct = Math.round((x.similarity || 0) * 100);
-			const why = (x.eligibility_checks || []).filter((c) => c.ok !== true).map((c) => T.esc(T.lang() === "ar" ? c.text_ar : c.text_en)).join("<br>");
-			return `<div class="rankrow" style="grid-template-columns:44px minmax(0,2fr) minmax(0,1.4fr) 120px 130px">
+			const why = (x.eligibility_checks || []).filter((c) => c.ok !== true).map((c) => T.mix(T.lang() === "ar" ? c.text_ar : c.text_en)).join("<br>");
+			return `<div class="rankrow r4">
 				<div class="pos num">${i + 1}</div>
-				<div>${link(x)}<div class="list-id">${(p.strengths || []).slice(0, 3).map((s) => `<span class="chip green" style="font-size:11px">${T.esc(s)}</span>`).join("")}</div></div>
-				<div class="hint">${t("تقدّم سابقًا لـ", "Applied before to")} <b>${T.esc(x.previous_opening_title || p.job_title || "—")}</b><br>${t("درجته هناك", "score there")} <b class="num">${T.fmt1(p.score)}</b> ${p.band ? T.chipBand(p.band) : ""}</div>
-				<div><div class="bar high"><i style="width:${pct}%"></i></div><div class="hint">${t("تشابه", "similarity")} <b class="num">${pct}%</b></div></div>
-				<div>${ELIG(x.eligibility)}${why ? `<div class="hint" style="margin-top:4px">${why}</div>` : ""}</div></div>`;
+				<div class="c-name">${link(x)}</div>
+				<div class="c-prev hint">${t("تقدّم سابقًا لـ", "Applied before to")} <b>${T.esc(x.previous_opening_title || p.job_title || "—")}</b><br>${t("درجته هناك", "score there")} <b class="num">${T.fmt1(p.score)}</b> ${p.band ? T.chipBand(p.band) : ""}</div>
+				<div class="c-sim"><div class="bar sim"><i style="width:${pct}%"></i></div><div class="hint">${t("تشابه", "similarity")} <b class="num">${pct}%</b></div></div>
+				<div class="c-elig">${ELIG(x.eligibility)}${why ? `<div class="hint" style="margin-top:4px">${why}</div>` : ""}</div>
+				${(p.strengths || []).length ? `<div class="c-str">${(p.strengths || []).slice(0, 4).map((x2) => `<span class="chip green">${T.esc(x2)}</span>`).join("")}</div>` : ""}</div>`;
 		}).join("");
-		const exc = d.excluded.map((x) => `<tr><td>${link(x)}</td><td><span class="chip ${REASON[x.reason] || ""}">${T.esc(T.lang() === "ar" ? x.reason_ar : x.reason_en)}</span>${(x.details || []).length ? `<div class="hint">${x.details.map(T.esc).join("<br>")}</div>` : ""}</td><td class="hint">${T.esc(x.previous_opening_title || "")}</td></tr>`).join("");
+		const exc = d.excluded.map((x) => `<tr><td>${link(x)}</td><td><span class="chip ${REASON[x.reason] || ""}">${T.esc(T.lang() === "ar" ? x.reason_ar : x.reason_en)}</span>${(x.details || []).length ? `<div class="hint">${x.details.map(T.mix).join("<br>")}</div>` : ""}</td><td class="hint">${T.esc(x.previous_opening_title || "")}</td></tr>`).join("");
 		$body.html(`
 			<div class="page-title"><div><h1>${T.esc(d.opening_title)}</h1><div class="sub">${t("اقتراحات من المتقدمين السابقين", "Suggestions from past applicants")} · ${t("نموذج التشابه", "similarity model")} <code>${T.esc(d.model)}</code></div></div></div>
-			<div class="note strong">ⓘ ${t("اقتراح فقط: لا يُنقل أي متقدم ولا تتغيّر حالة أي طلب تلقائيًا. الشروط الإلزامية تُفحص أولًا في الكود، ثم يُرتَّب المستوفون بالتشابه بين الشاغر وملفهم المُتحقَّق منه. من سحب موافقته أو انتهت مدة الاحتفاظ ببياناته لا يُقترح أبدًا.", "Suggestions only: nobody is moved and no status changes automatically. Hard rules are checked first in code, then eligible applicants are ordered by similarity between the opening and their verified profile. Applicants who withdrew consent or whose retention ended are never suggested.")}</div>
+			<div class="note info">ⓘ ${t("اقتراح فقط: لا يُنقل أي متقدم ولا تتغيّر حالة أي طلب تلقائيًا. الشروط الإلزامية تُفحص أولًا في الكود، ثم يُرتَّب المستوفون بالتشابه بين الشاغر وملفهم المُتحقَّق منه. من سحب موافقته أو انتهت مدة الاحتفاظ ببياناته لا يُقترح أبدًا.", "Suggestions only: nobody is moved and no status changes automatically. Hard rules are checked first in code, then eligible applicants are ordered by similarity between the opening and their verified profile. Applicants who withdrew consent or whose retention ended are never suggested.")}</div>
 			<div class="kpis5" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="kpi"><small>${t("مقترحون", "Suggested")}</small><b>${T.N(d.counts.suggested)}</b></div><div class="kpi"><small>${t("مستوفون للشروط", "Meet the rules")}</small><b>${T.N(d.suggestions.filter((x) => x.eligibility === "eligible").length)}</b></div><div class="kpi"><small>${t("مستبعدون", "Excluded")}</small><b>${T.N(d.counts.excluded)}</b></div></div>
 			<div class="card"><h2>${t("المقترحون", "Suggested")} <small>${t("المستوفون أولًا، ثم الأعلى تشابهًا", "eligible first, then highest similarity")}</small></h2>${sug || `<p class="hint">${t("لا اقتراحات", "No suggestions")}</p>`}
 				<p class="hint">${t("نسبة التشابه تقارب بين نص الشاغر ومعاييره وبين ملف المتقدم (المعايير المُثبتة، الإجابات المنظمة، نص السيرة بعد إخفاء الهوية). ليست درجة تقييم.", "Similarity compares the opening and its criteria with the applicant's profile (proven criteria, structured answers, redacted CV text). It is not an assessment score.")}</p>${T.disclaimer()}</div>

@@ -13,6 +13,7 @@ app_include_css = ["/assets/ido_talent_ai/css/talent_ai.css"]
 
 # Website: eligibility sentences on the HRMS job page (no template override)
 web_include_js = ["/assets/ido_talent_ai/js/talent_ai_web.js"]
+web_include_css = ["/assets/ido_talent_ai/css/talent_ai_web.css"]
 
 doctype_js = {
 	"Job Applicant": "public/js/job_applicant.js",

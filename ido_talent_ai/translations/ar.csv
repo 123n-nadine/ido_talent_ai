@@ -40,7 +40,7 @@ A reason is required.,السبب مطلوب.
 A template has no applicants.,القالب ليس له متقدمون.
 Add at least one criterion.,أضف معيارًا واحدًا على الأقل.
 Allowed facts,الحقائق المسموح إرسالها
-Answered,تمت الإجابة
+Answered,أُجيب
 Applicant,المتقدم
 Approved by,اعتمدها
 Approved on,تاريخ الاعتماد
@@ -218,3 +218,90 @@ text,نص
 date,تاريخ
 boolean,نعم/لا
 AI Recruitment,التوظيف الذكي
+Job Opening Template,قالب الوظيفة الشاغرة
+Job Title,المسمى الوظيفي
+Posted On,تاريخ النشر
+Closes On,تاريخ الإغلاق
+"If set, the job opening will be closed automatically after this date",عند تحديده تُغلق الوظيفة الشاغرة تلقائيًا بعد هذا التاريخ
+Closed On,تاريخ الإغلاق الفعلي
+Company Details,بيانات الشركة
+Employment Type,نوع التوظيف
+Job Requisition,طلب توظيف
+Prevent Duplicate Applications,منع الطلبات المكررة
+"If enabled, candidates who have already applied with the same email address will not be allowed to apply again",عند التفعيل لا يستطيع من تقدّم بنفس البريد الإلكتروني التقديم مرة أخرى
+Publish Applications Received,نشر عدد الطلبات المستلمة
+"If enabled, the total no. of applications received for this opening will be displayed on the website",عند التفعيل يظهر على الموقع عدد الطلبات المستلمة لهذا الشاغر
+Application Web Form Route,مسار نموذج التقديم
+Route to the custom Job Application Webform,مسار نموذج التقديم المخصص لهذا الشاغر
+Pay Details,تفاصيل الراتب
+Lower Range,الحد الأدنى
+Upper Range,الحد الأعلى
+Salary Paid Per,الراتب يُدفع كل
+Publish Salary Range,نشر نطاق الراتب
+Job Applicant,متقدم لوظيفة
+Shortlisted,مرشّح للمقابلة
+Applicant Rating,تقييم المتقدم
+Never sent to the AI engine; only an HMAC token is sent for duplicate detection.,لا يُرسل أبدًا إلى محرك الذكاء الاصطناعي؛ تُرسل بصمة HMAC فقط لكشف الطلبات المكررة.
+Consent withdrawn on,تاريخ سحب الموافقة
+CV note,ملاحظة عن السيرة الذاتية
+Open Resume in New Tab,فتح السيرة الذاتية في تبويب جديد
+Salary Expectation,الراتب المتوقع
+Interview,مقابلة
+Interview Type,نوع المقابلة
+Resume link,رابط السيرة الذاتية
+Under Review,قيد المراجعة
+Cleared,اجتاز المقابلة
+Scheduled On,موعد المقابلة
+Interviewers,المقابِلون
+Ratings,التقييمات
+Expected Average Rating,متوسط التقييم المتوقع
+Obtained Average Rating,متوسط التقييم الفعلي
+Interview Summary,ملخص المقابلة
+Feedback HTML,ملاحظات المقابلة
+Applicant Name,اسم المتقدم
+Offer Date,تاريخ العرض
+Job Offer Term Template,قالب شروط عرض العمل
+Printing Details,تفاصيل الطباعة
+Body,النص
+Terms,الشروط
+In Process,قيد المعالجة
+For Designation,للمسمى الوظيفي
+Referral Details,بيانات الترشيح
+Contact No.,رقم التواصل
+Resume Link,رابط السيرة الذاتية
+Current Employer,جهة العمل الحالية
+Current Job Title,المسمى الوظيفي الحالي
+Referrer Details,بيانات المرشِّح
+Referrer Name,اسم المرشِّح
+Is Applicable for Referral Bonus,يستحق مكافأة الترشيح
+Referral Bonus Payment Status,حالة صرف مكافأة الترشيح
+Why is this Candidate Qualified for this Position?,لماذا يناسب هذا المرشح الوظيفة؟
+Work References,مراجع العمل
+Appraisal Template,قالب تقييم الأداء
+Required Skills,المهارات المطلوبة
+Skills,المهارات
+Close Job Opening,إغلاق الوظيفة الشاغرة
+Reopen Job Opening,إعادة فتح الوظيفة الشاغرة
+Shortlist,ترشيح للمقابلة
+Reject,رفض
+Schedule Interview,جدولة مقابلة
+View Job Offer,فتح عرض العمل
+Create Job Offer,إنشاء عرض عمل
+Interview scheduled successfully,جُدولت المقابلة بنجاح
+Recruitment,التوظيف
+Hiring Pipeline,مسار التوظيف
+Job Portal,بوابة الوظائف
+Interviews,المقابلات
+Interview Feedback,تقييم المقابلة
+Last Edited By {0},آخر تعديل بواسطة {0}
+Last Edited By You,آخر تعديل بواسطتك
+No.,م
+Applications Received,الطلبات المستلمة
+Applications received:,الطلبات المستلمة:
+Closes on:,يُغلق في:
+Job Openings,الوظائف الشاغرة
+Opening closed.,أُغلق الشاغر.
+Salary Range,نطاق الراتب
+Search for Jobs,ابحث عن وظيفة
+Showing,عرض
+Apply Now,قدّم الآن

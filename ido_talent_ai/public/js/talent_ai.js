@@ -9,13 +9,30 @@ frappe.provide("talent_ai");
 	T.t = (ar, en) => (T.lang() === "ar" ? ar : en);
 	T.esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 	T.N = (n) => `<bdi class="num">${T.esc(n)}</bdi>`;
+	// escape, then keep Latin words, numbers, codes and paths in their own reading direction inside
+	// Arabic sentences (never inside an HTML entity)
+	T.mix = (s) => T.esc(s).replace(/(?<![&#\w])[A-Za-z0-9](?:[A-Za-z0-9_.:/@%+\-]*[A-Za-z0-9%])?(?:\s+[A-Za-z](?:[A-Za-z0-9_.:/@%+\-]*[A-Za-z0-9%])?)*/g, (m) => `<bdi dir="ltr">${m}</bdi>`);
+	// Same labels as the engine (app/domain/arabic_text.py): how the CV was read, what redaction removed.
+	T.REDACT = { name: ["الاسم", "name"], phone: ["الهاتف", "phone"], email: ["البريد", "e-mail"], national_id: ["رقم الهوية", "ID number"], dob: ["تاريخ الميلاد", "date of birth"], age: ["العمر", "age"], nationality: ["الجنسية", "nationality"], gender: ["الجنس", "gender"], address: ["العنوان", "address"], url: ["رابط", "link"] };
+	T.redactLabel = (k) => (T.REDACT[k] ? T.t(T.REDACT[k][0], T.REDACT[k][1]) : k);
+	T.method = (m) => {
+		m = m || "";
+		const base = m.split("+").pop();
+		if (m.startsWith("libreoffice+")) return T.t("ملف DOC/RTF محوَّل إلى PDF", "DOC/RTF converted to PDF");
+		if (base.startsWith("ocr:")) return T.t("قراءة ضوئية (OCR)", "OCR (scanned image)");
+		if (base === "pdf_text") return T.t("نص PDF مباشر", "PDF text layer");
+		if (base === "docx") return T.t("ملف Word", "Word file");
+		return T.esc(base || "—");
+	};
 	T.fmt1 = (n) => (n == null || n === "" ? "—" : (Math.round(Number(n) * 10) / 10).toString());
 	T.pct = (n) => (n == null ? "—" : Math.round(Number(n) * 100) + "%");
-	T.fd = (s) => {
+	T.fd = (s, withTime = true) => {
 		if (!s) return "—";
 		const d = new Date(String(s).replace(" ", "T"));
 		if (isNaN(d)) return T.esc(s);
-		return d.toLocaleString(T.lang() === "ar" ? "ar-EG-u-nu-latn" : "en-GB", { dateStyle: "medium", timeStyle: "short" });
+		const opts = { day: "numeric", month: "long", year: "numeric" };
+		if (withTime) Object.assign(opts, { hour: "numeric", minute: "2-digit" });
+		return `<bdi>${T.esc(d.toLocaleString(T.lang() === "ar" ? "ar-EG-u-nu-latn" : "en-GB", opts))}</bdi>`;
 	};
 	T.DISCLAIMER = { ar: "الدرجة ترتيب مقابل معايير معتمدة، وليست احتمال نجاح في الوظيفة.", en: "The score is a ranking against approved criteria, not a probability of success in the job." };
 	T.disclaimer = () => `<div class="disclaimer">ⓘ ${T.t(T.DISCLAIMER.ar, T.DISCLAIMER.en)}</div>`;
@@ -40,7 +57,9 @@ frappe.provide("talent_ai");
 	T.chipAi = (s) => T.chip(T.AIST[T.ENG[s] || s] || null);
 	T.chipStatus = (s) => T.chip(T.STATUS[s] || { ar: s, en: s });
 	T.chipLvl = (l) => `<span class="chip ${l >= 75 ? "green" : l >= 50 ? "amber" : l > 0 ? "red" : ""}">${l == null ? "—" : l}</span>`;
-	T.flagChips = (flags) => (flags || []).filter((f) => T.FLAGS[f]).map((f) => `<span class="chip ${f === "hr_override" || f === "duplicate" ? "purple" : "amber"}">${T.L(T.FLAGS[f])}</span>`).join(" ");
+	T.FLAG_CLS = { hr_override: "purple", duplicate: "grey", stale: "grey", data_changed: "grey" };
+	T.flagChips = (flags) => (flags || []).filter((f) => T.FLAGS[f]).map((f) => `<span class="chip ${T.FLAG_CLS[f] || "amber"}">${T.L(T.FLAGS[f])}</span>`).join(" ");
+	T.chipMand = (m) => (m ? `<span class="chip mand">${T.t("إلزامي", "mandatory")}</span>` : `<span class="chip">${T.t("اختياري", "optional")}</span>`);
 	T.formUrl = (dt, name) => frappe.utils.get_form_link(dt, name);
 	T.call = (method, args) => frappe.xcall("ido_talent_ai.api." + method, args || {});
 	T.isHR = () => frappe.user && (frappe.user.has_role("HR Manager") || frappe.user.has_role("HR User"));
@@ -81,7 +100,7 @@ frappe.provide("talent_ai");
 			const cls = st.status === "done" ? "done" : st.status === "running" ? "on" : st.status === "skipped" ? "skip" : st.status === "failed" ? "failed" : "";
 			const mark = st.status === "done" ? "✓" : st.status === "skipped" ? "–" : st.status === "failed" ? "✗" : i + 1;
 			const ms = st.ms != null && st.ms > 0 ? ` <span class="num">(${st.ms >= 1000 ? (st.ms / 1000).toFixed(1) + "s" : st.ms + "ms"})</span>` : "";
-			return `<div class="pstep ${cls}"><div class="n">${mark}</div><div class="t"><b>${T.esc(T.lang() === "ar" ? st.label_ar : st.label_en)}</b><small>${st.status === "running" ? `<span class="spin"></span> ${T.t("جارٍ…", "running…")}` : T.esc(st.note || "")}${ms}</small></div></div>`;
+			return `<div class="pstep ${cls}"><div class="n">${mark}</div><div class="t"><b>${T.esc(T.lang() === "ar" ? st.label_ar : st.label_en)}</b><small>${st.status === "running" ? `<span class="spin"></span> ${T.t("جارٍ…", "running…")}` : T.mix((T.lang() === "ar" ? st.note : st.note_en || st.note) || "")}${ms}</small></div></div>`;
 		}).join("");
 		return `<div class="stages pipe">${cells}</div>`;
 	};
@@ -97,9 +116,9 @@ frappe.provide("talent_ai");
 		(d.criteria || []).forEach((c) => (rubric[c.key] = c.rubric || []));
 		const rubricText = (key, lvl) => { const x = (rubric[key] || []).find((y) => y.level === lvl); return x ? T.esc(x.text) : ""; };
 		let html = "";
-		if (d.duplicate_of) html += `<div class="note danger">⧉ <b>${t("طلب مكرر", "Duplicate application")}</b> — ${t("نفس رقم الهوية (بصمة مشفّرة) مثل", "Same national ID (hashed) as")} <a href="${talent_ai.formUrl("Job Applicant", d.duplicate_of)}"><b>${T.esc(d.duplicate_of_name || d.duplicate_of)}</b></a>. ${t("لا يُحذف أي طلب تلقائيًا؛ يُرتَّب الطلب الأصلي فقط.", "Nothing is deleted automatically; only the original application is ranked.")}</div>`;
+		if (d.duplicate_of) html += `<div class="note grey">⧉ <b>${t("طلب مكرر", "Duplicate application")}</b> — ${t("نفس رقم الهوية (بصمة مشفّرة) مثل", "Same national ID (hashed) as")} <a href="${talent_ai.formUrl("Job Applicant", d.duplicate_of)}"><b>${T.esc(d.duplicate_of_name || d.duplicate_of)}</b></a>. ${t("لا يُحذف أي طلب تلقائيًا؛ يُرتَّب الطلب الأصلي فقط.", "Nothing is deleted automatically; only the original application is ranked.")}</div>`;
 		const stale = d.ai_stale || (r && r.current === false);
-		if (stale && r && d.ai_status !== "Processing") html += `<div class="note strong">⚠ ${d.stale_reason === "stale" || (r && r.stale_reason === "stale") ? t("هذه النتيجة محسوبة بنسخة معايير سابقة", "This result was computed with a previous criteria version") : t("النتيجة لا تعكس آخر تعديل على بيانات المتقدم", "The result does not reflect the latest edit to the applicant data")}. ${t("لا تُعرض كنتيجة حالية ولا تدخل الترتيب حتى تُعاد.", "It is not current and is not ranked until re-scored.")} <button class="btn sm primary" data-tai="rescreen">↻ ${t("إعادة التقييم", "Re-score")}</button></div>`;
+		if (stale && r && d.ai_status !== "Processing") html += `<div class="note grey">⚠ ${d.stale_reason === "stale" || (r && r.stale_reason === "stale") ? t("هذه النتيجة محسوبة بنسخة معايير سابقة", "This result was computed with a previous criteria version") : t("النتيجة لا تعكس آخر تعديل على بيانات المتقدم", "The result does not reflect the latest edit to the applicant data")}. ${t("لا تُعرض كنتيجة حالية ولا تدخل الترتيب حتى تُعاد.", "It is not current and is not ranked until re-scored.")} <button class="btn sm primary" data-tai="rescreen">↻ ${t("إعادة التقييم", "Re-score")}</button></div>`;
 		if (d.ai_status === "Processing") html += `<div class="note"><span class="spin"></span> ${t("جاري المعالجة… تتحدّث هذه الشاشة تلقائيًا عند وصول النتيجة.", "Processing… this screen updates by itself when the result arrives.")}</div>`;
 		if (d.ai_status === "Failed") {
 			const j = (d.jobs || [])[0];
@@ -109,18 +128,18 @@ frappe.provide("talent_ai");
 			if (!d.ai_status) html += `<div class="note">${t("لم يُرسل هذا الطلب للفرز الذكي (الشاغر غير مفعّل للذكاء أو ملف المعايير غير معتمد).", "This application was not sent to AI screening (AI not enabled on the opening or the profile is not approved).")}</div>`;
 			return `<div class="tai">${html}${T.decisionHtml(d)}</div>`;
 		}
-		const checks = (r.eligibility_checks || []).map((c) => `<li>${c.ok === true ? "✓" : c.ok === false ? "✗" : "?"} ${T.esc(T.lang() === "ar" ? c.text_ar : c.text_en)}</li>`).join("");
+		const checks = (r.eligibility_checks || []).map((c) => `<li>${c.ok === true ? "✓" : c.ok === false ? "✗" : "?"} ${T.mix(T.lang() === "ar" ? c.text_ar : c.text_en)}</li>`).join("");
 		const evCell = (c) => {
 			if (c.missing_evidence && c.overridden_level == null) return `<span class="src missing">${t("دليل ناقص", "missing evidence")}</span> <span class="hint">${t("لم يُجب ولا تذكره السيرة", "not answered and not in the CV")}</span>`;
 			if (c.contradiction) {
 				const parts = String(c.evidence || "").split(" | ");
-				return `<div class="contra"><div><span class="src cv">${t("من السيرة", "from the CV")}</span> <span class="quote" data-tai="hilite" data-key="${c.key}">“<bdi>${T.esc(parts[0])}</bdi>”</span> → ${T.chipLvl(c.cv_level != null ? c.cv_level : c.level)}</div><div><span class="src form">${t("إجابة النموذج", "form answer")}</span> <span class="quote none">${T.esc(qLabel[c.field] ? qLabel[c.field] + ": " : "")}<b>${T.esc((parts[1] || "").replace(/^إجابة النموذج: /, ""))}</b></span>${c.form_level != null ? " → " + T.chipLvl(c.form_level) : ""}</div><div class="chip red">⇄ ${t("تعارض — يُستخدم الأدنى", "contradiction — the lower is used")}</div></div>`;
+				return `<div class="contra"><div><span class="src cv">${t("من السيرة", "from the CV")}</span> <span class="quote" data-tai="hilite" data-key="${c.key}">«<bdi>${T.esc(parts[0])}</bdi>»</span> → ${T.chipLvl(c.cv_level != null ? c.cv_level : c.level)}</div><div><span class="src form">${t("إجابة النموذج", "form answer")}</span> <span class="quote none">${T.esc(qLabel[c.field] ? qLabel[c.field] + ": " : "")}<b>${T.esc((parts[1] || "").replace(/^إجابة النموذج: /, ""))}</b></span>${c.form_level != null ? " → " + T.chipLvl(c.form_level) : ""}</div><div class="chip amber">⇄ ${t("تعارض — يُستخدم الأدنى", "contradiction — the lower is used")}</div></div>`;
 			}
-			if (c.source === "cv_quote") return `<span class="src cv">${t("من السيرة", "from the CV")}</span> <span class="quote" data-tai="hilite" data-key="${c.key}">“<bdi>${T.esc(c.evidence)}</bdi>”</span>`;
-			const conf = c.cv_quote ? `<div style="margin-top:4px"><span class="src cv">${c.confirmed_by_cv ? t("تؤكده السيرة", "confirmed by CV") : t("من السيرة", "from the CV")}${c.cv_level != null ? " · " + c.cv_level : ""}</span> <span class="quote" data-tai="hilite" data-key="${c.key}">“<bdi>${T.esc(c.cv_quote)}</bdi>”</span></div>` : "";
+			if (c.source === "cv_quote") return `<span class="src cv">${t("من السيرة", "from the CV")}</span> <span class="quote" data-tai="hilite" data-key="${c.key}">«<bdi>${T.esc(c.evidence)}</bdi>»</span>`;
+			const conf = c.cv_quote ? `<div style="margin-top:4px"><span class="src cv">${c.confirmed_by_cv ? t("تؤكده السيرة", "confirmed by CV") : t("من السيرة", "from the CV")}${c.cv_level != null ? " · " + c.cv_level : ""}</span> <span class="quote" data-tai="hilite" data-key="${c.key}">«<bdi>${T.esc(c.cv_quote)}</bdi>»</span></div>` : "";
 			return `<span class="src form">${t("إجابة النموذج", "form answer")}</span> <span class="quote none">${T.esc(qLabel[c.field] ? qLabel[c.field] + ": " : "")}<b>${T.esc(c.evidence)}</b></span>${conf}`;
 		};
-		const crit = r.criteria.map((c) => `<tr><td>${T.esc(c.text)}</td><td>${c.mandatory ? `<span class="chip red">${t("إلزامي", "mandatory")}</span>` : `<span class="chip">${t("اختياري", "optional")}</span>`}</td><td class="num">${c.weight}%</td><td>${T.chipLvl(c.effective_level)} <span class="hint">${rubricText(c.key, c.effective_level)}</span>${c.overridden_level != null ? ` <span class="tag-hr" title="${T.esc(c.override_reason)}">${t("تعديل HR", "HR edit")}</span><div class="hint">${t("مستوى الذكاء:", "AI level:")} ${c.missing_evidence ? t("دليل ناقص", "missing") : c.level} · ${T.esc(c.override_by)}: ${T.esc(c.override_reason)}</div>` : ""}</td><td>${evCell(c)}</td><td><button class="btn sm" data-tai="override" data-key="${c.key}" data-text="${T.esc(c.text)}" data-level="${c.effective_level}">${t("إلغاء الحكم", "Override")}</button></td></tr>`).join("");
+		const crit = r.criteria.map((c) => `<tr><td>${T.esc(c.text)}</td><td>${T.chipMand(c.mandatory)}</td><td class="num">${c.weight}%</td><td>${T.chipLvl(c.effective_level)} <span class="hint">${rubricText(c.key, c.effective_level)}</span>${c.overridden_level != null ? ` <span class="tag-hr" title="${T.esc(c.override_reason)}">${t("تعديل HR", "HR edit")}</span><div class="hint">${t("مستوى الذكاء:", "AI level:")} ${c.missing_evidence ? t("دليل ناقص", "missing") : c.level} · ${T.esc(c.override_by)}: ${T.esc(c.override_reason)}</div>` : ""}</td><td>${evCell(c)}</td><td><button class="btn sm" data-tai="override" data-key="${c.key}" data-text="${T.esc(c.text)}" data-level="${c.effective_level}">${t("إلغاء الحكم", "Override")}</button></td></tr>`).join("");
 		const strengths = (r.strengths || []).map((x) => `<div class="chip green" style="margin:3px 2px">${T.esc(x.text)} · ${x.level}</div>`).join("") || `<p class="hint">${t("لا شيء", "none")}</p>`;
 		const gaps = (r.gaps || []).map((x) => `<div class="chip ${x.missing ? "amber" : "red"}" style="margin:3px 2px">${T.esc(x.text)} · ${x.missing ? t("دليل ناقص", "missing") : x.level}</div>`).join("") || `<p class="hint">${t("لا شيء", "none")}</p>`;
 		const raise = (r.raise_score || []).length ? `<ul class="ul">${r.raise_score.map((x) => `<li>${x.missing ? t("تقديم دليل على", "Provide evidence for") : t("إثبات المستوى 100 في", "Prove level 100 in")} «${T.esc(x.text)}»: <b class="num">+${T.fmt1(x.points)}</b> ${t("نقطة", "points")}</li>`).join("")}</ul>` : `<p class="hint">${t("الدرجة كاملة", "Full score")}</p>`;
@@ -129,16 +148,16 @@ frappe.provide("talent_ai");
 		const vers = r.versions || {};
 		const cv = r.cv;
 		html += `
-		<div class="card"><h2>${t("تقييم الذكاء الاصطناعي", "AI assessment")} <span class="chip purple">${t("قراءة فقط — لا يغيّر حالة الطلب", "read-only — never changes the status")}</span> ${T.flagChips((r.flags || []).filter((f) => f !== "hr_override"))}</h2>
+		<div class="card"><h2>${t("تقييم الذكاء الاصطناعي", "AI assessment")} <span class="chip blue">${t("قراءة فقط — لا يغيّر حالة الطلب", "read-only — never changes the status")}</span> ${T.flagChips((r.flags || []).filter((f) => f !== "hr_override"))}</h2>
 			<div class="aihead">
 				<div class="kpi"><small>${t("الأهلية", "Eligibility")}</small>${T.chipElig(r.eligibility)}</div>
 				<div class="kpi"><small>${t("الدرجة", "Score")} <code>ai_score</code></small><b class="score ${r.eligibility === "not_eligible" ? "off" : r.band}">${T.N(T.fmt1(r.score))}</b> <span class="hint">/ 100</span><div>${T.chipBand(r.band, r.eligibility)}</div></div>
 				<div class="kpi"><small>${t("التغطية", "Coverage")}</small><b>${T.N(T.pct(r.coverage))}</b>${r.needs_review ? `<div><span class="chip amber">${t("يحتاج مراجعة", "Needs review")}</span></div>` : ""}</div>
 				<div class="kpi"><small>${t("الترتيب في الشاغر", "Rank in opening")}</small><b>${rankTxt}</b>${notRanked}</div>
 			</div>
-			<div class="grid2"><div><b class="lbl">${t("أسباب الأهلية (تُفحص في الكود)", "Eligibility reasons (checked in code)")}</b><ul class="ul">${checks || `<li>${t("لا شروط إلزامية لهذا الشاغر", "No hard rules for this opening")}</li>`}</ul></div><div><b class="lbl">${t("الملخص", "Summary")}</b><div class="summary">${T.esc(r.summary)}</div></div></div>
+			<div class="grid2"><div><b class="lbl">${t("أسباب الأهلية (تُفحص في الكود)", "Eligibility reasons (checked in code)")}</b><ul class="ul">${checks || `<li>${t("لا شروط إلزامية لهذا الشاغر", "No hard rules for this opening")}</li>`}</ul></div><div><b class="lbl">${t("الملخص", "Summary")}</b><div class="summary">${T.mix(r.summary)}</div></div></div>
 			${(r.flags || []).includes("mandatory_zero") ? `<div class="note danger">${t("معيار إلزامي في المستوى 0 ← الفئة «منخفضة» بغض النظر عن الدرجة.", "A mandatory criterion at level 0 → band Low regardless of the score.")}</div>` : ""}
-			${(r.flags || []).includes("contradiction") ? `<div class="note danger">⇄ ${t("تعارض بين الإجابة والسيرة: يُستخدم المستوى الأدنى المدعوم بالدليل، والطلب يحتاج مراجعة بشرية.", "Answer vs CV contradiction: the lower evidenced level is used and the application needs human review.")}</div>` : ""}
+			${(r.flags || []).includes("contradiction") ? `<div class="note strong">⇄ ${t("تعارض بين الإجابة والسيرة: يُستخدم المستوى الأدنى المدعوم بالدليل، والطلب يحتاج مراجعة بشرية.", "Answer vs CV contradiction: the lower evidenced level is used and the application needs human review.")}</div>` : ""}
 			${(r.flags || []).includes("cv_unreadable") ? `<div class="note strong">${t("ملف السيرة غير مقروء — التقييم من الإجابات فقط.", "The CV file is unreadable — assessed from the answers only.")}</div>` : ""}
 			${T.disclaimer()}
 		</div>
@@ -146,7 +165,7 @@ frappe.provide("talent_ai");
 		<div class="card"><h2>${t("نقاط القوة والنواقص", "Strengths and gaps")}</h2><div class="grid3"><div><b class="lbl">${t("نقاط القوة", "Strengths")} <span class="hint">(75–100)</span></b>${strengths}</div><div><b class="lbl">${t("النواقص", "Gaps")} <span class="hint">(0–25 ${t("أو دليل ناقص", "or missing")})</span></b>${gaps}</div><div><b class="lbl">${t("ما الذي يرفع درجته", "What would raise the score")}</b>${raise}</div></div></div>
 		<div class="card"><h2>${t("المعايير والأدلة", "Criteria and evidence")} <small>AI Assessment Evidence</small></h2>
 			<table><thead><tr><th>${t("المعيار", "Criterion")}</th><th>${t("النوع", "Type")}</th><th>${t("الوزن", "W")}</th><th>${t("المستوى", "Level")}</th><th>${t("الدليل", "Evidence")}</th><th></th></tr></thead><tbody>${crit}</tbody></table>
-			<div class="audit"><span>${t("النموذج", "model")}: <code>${T.esc(vers.model)}</code></span><span>${t("الموجّه", "prompt")}: <code>${T.esc(vers.prompt)}</code></span><span>${t("نسخة المعايير", "profile version")}: <code>v${r.job_version}</code></span><span>${t("بصمة المدخلات", "input hash")}: <code>${T.esc(String(r.input_hash || "").slice(0, 23))}…</code></span><span>${t("تاريخ التقييم", "evaluated on")}: <code>${T.fd(r.completed_at)}</code></span></div>${T.disclaimer()}</div>
+			<div class="audit"><span>${t("النموذج", "model")}: <code>${T.esc(vers.model)}</code></span><span>${t("الموجّه", "prompt")}: <code>${T.esc(vers.prompt)}</code></span><span>${t("نسخة المعايير", "profile version")}: <code>v${r.job_version}</code></span><span>${t("بصمة المدخلات", "input hash")}: <code>${T.esc(String(r.input_hash || "").slice(0, 23))}…</code></span><span>${t("تاريخ التقييم", "evaluated on")}: ${T.fd(r.completed_at)}</span></div>${T.disclaimer()}</div>
 		${T.cvPanelHtml(r)}`;
 		return `<div class="tai">${html}${T.decisionHtml(d)}</div>`;
 	};
@@ -156,11 +175,11 @@ frappe.provide("talent_ai");
 		const cv = r.cv;
 		if (!cv && T.cvNote) return `<div class="card"><h2>${t("السيرة الذاتية", "CV")}</h2><div class="note strong">${T.esc(T.cvNote)}</div></div>`;
 		if (!cv) return `<div class="card"><h2>${t("السيرة الذاتية", "CV")}</h2><p class="hint">${t("لم يرفع المتقدم سيرة ذاتية. التقييم من إجابات النموذج فقط.", "No CV uploaded. Assessed from the form answers only.")}</p></div>`;
-		if (cv.status !== "ready") return `<div class="card"><h2>${t("السيرة الذاتية", "CV")}</h2><div class="note danger">${t("تعذّرت قراءة الملف:", "The file could not be read:")} ${T.esc(cv.error)}</div></div>`;
+		if (cv.status !== "ready") return `<div class="card"><h2>${t("السيرة الذاتية", "CV")}</h2><div class="note strong">${t("تعذّرت قراءة الملف:", "The file could not be read:")} ${T.esc(cv.error)}</div></div>`;
 		const quotes = (r.criteria || []).map((c) => ({ q: c.cv_quote || (c.source === "cv_quote" || c.contradiction ? String(c.evidence || "").split(" | ")[0] : ""), key: c.key })).filter((x) => x.q);
 		let h = T.esc(cv.redacted_text || "");
 		quotes.forEach(({ q, key }) => { const eq = T.esc(q); if (eq && h.includes(eq)) h = h.replace(eq, `<mark class="${T.hiliteKey === key ? "hot" : ""}" id="tai-q-${key}">${eq}</mark>`); });
-		return `<div class="card"><h2>${t("نص السيرة كما يراه النموذج (بعد إخفاء الهوية)", "CV text as the model sees it (redacted)")} <small>${T.esc(cv.method || "")}${cv.ocr_confidence != null ? " · " + t("ثقة OCR", "OCR confidence") + " " + T.pct(cv.ocr_confidence) : ""}</small> <button class="btn sm" data-tai="cv" style="margin-inline-start:auto">◫ ${t("تحليل السيرة", "CV analysis")}</button></h2><div class="cvtext">${h}</div><p class="hint">${t("الاقتباسات المظلّلة هي أدلة السيرة. انقر اقتباسًا في جدول المعايير لإبرازه.", "Highlighted quotes are the CV evidence. Click a quote in the criteria table to highlight it.")}</p></div>`;
+		return `<div class="card"><h2>${t("نص السيرة كما يراه النموذج (بعد إخفاء الهوية)", "CV text as the model sees it (redacted)")} <small>${T.method(cv.method)}${cv.ocr_confidence != null ? " · " + t("ثقة OCR", "OCR confidence") + " " + T.pct(cv.ocr_confidence) : ""}</small> <button class="btn sm" data-tai="cv" style="margin-inline-start:auto">◫ ${t("تحليل السيرة", "CV analysis")}</button></h2><div class="cvtext">${h}</div><p class="hint">${t("الاقتباسات المظلّلة هي أدلة السيرة. انقر اقتباسًا في جدول المعايير لإبرازه.", "Highlighted quotes are the CV evidence. Click a quote in the criteria table to highlight it.")}</p></div>`;
 	};
 
 	T.decisionHtml = (d) => {
@@ -198,10 +217,10 @@ frappe.provide("talent_ai");
 		const pairs = d.redaction_pairs && d.redaction_pairs.length
 			? `<table class="redact"><thead><tr><th>${t("قبل — النص كما استُخرج", "Before — as extracted")}</th><th>${t("بعد — ما يصل إلى النموذج اللغوي", "After — what reaches the language model")}</th></tr></thead><tbody>${d.redaction_pairs.filter(([a, b]) => a || b).map(([a, b]) => `<tr class="${a !== b ? "chg" : ""}"><td>${T.esc(a)}</td><td>${tokenize(b)}</td></tr>`).join("")}</tbody></table>`
 			: `<div class="grid2"><div><b class="lbl">${t("قبل", "Before")}</b><div class="cvtext">${T.esc(d.raw_text || "")}</div></div><div><b class="lbl">${t("بعد", "After")}</b><div class="cvtext">${tokenize(d.redacted_text || "")}</div></div></div>`;
-		const counts = d.redaction && d.redaction.counts ? Object.entries(d.redaction.counts).map(([k, v]) => `<span class="chip">${T.esc(k)} · ${v}</span>`).join(" ") : `<span class="hint">${t("لم يُعثر على بيانات شخصية", "no personal data found")}</span>`;
-		const ev = (d.criteria || []).filter((c) => d.quote_boxes && d.quote_boxes[c.key]).map((c) => `<div class="evq ${state.sel === c.key ? "on" : ""}" data-tai="cvsel" data-key="${c.key}"><b>${T.esc(c.text)}</b> ${T.chipLvl(c.cv_level != null ? c.cv_level : c.effective_level)}<div class="quote">“<bdi>${T.esc(c.cv_quote || String(c.evidence || "").split(" | ")[0])}</bdi>”</div></div>`).join("");
+		const counts = d.redaction && d.redaction.counts ? Object.entries(d.redaction.counts).map(([k, v]) => `<span class="chip">${T.esc(T.redactLabel(k))} · ${T.N(v)}</span>`).join(" ") : `<span class="hint">${t("لم يُعثر على بيانات شخصية", "no personal data found")}</span>`;
+		const ev = (d.criteria || []).filter((c) => d.quote_boxes && d.quote_boxes[c.key]).map((c) => `<div class="evq ${state.sel === c.key ? "on" : ""}" data-tai="cvsel" data-key="${c.key}"><b>${T.esc(c.text)}</b> ${T.chipLvl(c.cv_level != null ? c.cv_level : c.effective_level)}<div class="quote">«<bdi>${T.esc(c.cv_quote || String(c.evidence || "").split(" | ")[0])}</bdi>»</div></div>`).join("");
 		const avg = isOcr ? T.pct(d.ocr_confidence) : t("طبقة نصية (100%)", "text layer (100%)");
-		return `<div class="tai"><div class="aihead"><div class="kpi"><small>${t("طريقة الاستخراج", "Method")}</small><b style="font-size:15px">${T.esc(d.extraction_method || "—")}</b></div><div class="kpi"><small>${t("الصفحات / الأسطر", "Pages / lines")}</small><b>${T.N(pages.length)} / ${T.N((lay.lines || []).length)}</b></div><div class="kpi"><small>${t("ثقة القراءة", "Read confidence")}</small><b style="font-size:17px">${avg}</b></div><div class="kpi"><small>${t("حروف", "Characters")}</small><b>${T.N(d.chars || 0)}</b></div></div>
+		return `<div class="tai"><div class="aihead"><div class="kpi"><small>${t("طريقة الاستخراج", "Method")}</small><b style="font-size:15px">${T.method(d.extraction_method)}</b><div class="hint"><bdi class="num">${T.esc(d.extraction_method || "")}</bdi></div></div><div class="kpi"><small>${t("الصفحات / الأسطر", "Pages / lines")}</small><b>${T.N(pages.length)} / ${T.N((lay.lines || []).length)}</b></div><div class="kpi"><small>${t("ثقة القراءة", "Read confidence")}</small><b style="font-size:17px">${avg}</b></div><div class="kpi"><small>${t("حروف", "Characters")}</small><b>${T.N(d.chars || 0)}</b></div></div>
 			<div class="split" style="grid-template-columns:1.1fr 1fr"><div class="card"><h2>${t("الملف الأصلي", "Original file")} <small>${t("مربع لكل سطر أو مقطع بلون الثقة", "one box per line or segment, coloured by confidence")}</small></h2>${pager}${viewer}<div class="legend"><span class="cf hi">≥ 90%</span><span class="cf mid">80–89%</span><span class="cf lo">&lt; 80%</span><span class="cf hitc">${t("دليل محدد", "selected evidence")}</span></div></div>
 			<div><div class="card"><h2>${t("النص المستخرج", "Extracted text")} <small>${t("انقر سطرًا لإبرازه على الصورة", "click a line to locate it on the page")}</small></h2><div class="ocrlines">${lines || '<p class="hint">—</p>'}</div></div>
 			${ev ? `<div class="card"><h2>${t("أدلة السيرة", "CV evidence")} <small>${t("انقر دليلًا لتظليله في النص والصورة", "click to highlight it in the text and on the page")}</small></h2>${ev}</div>` : ""}</div></div>
@@ -226,9 +245,9 @@ frappe.provide("talent_ai");
 		const ev = (c) => {
 			if (!c) return `<span class="hint">—</span>`;
 			if (c.missing_evidence && c.overridden_level == null) return `<span class="src missing">${t("دليل ناقص", "missing evidence")}</span>`;
-			const q = c.source === "cv_quote" ? `<span class="src cv">${t("من السيرة", "from the CV")}</span> “<bdi>${T.esc(String(c.evidence || "").split(" | ")[0])}</bdi>”` : `<span class="src form">${t("إجابة النموذج", "form answer")}</span> <b>${T.esc(c.evidence)}</b>`;
-			const conf = c.cv_quote && c.source !== "cv_quote" ? `<div class="hint"><span class="src cv">${t("تؤكده السيرة", "confirmed by CV")}</span> “<bdi>${T.esc(c.cv_quote)}</bdi>”</div>` : "";
-			return `${q}${conf}${c.contradiction ? ` <span class="chip red">⇄ ${t("تعارض", "contradiction")}</span>` : ""}`;
+			const q = c.source === "cv_quote" ? `<span class="src cv">${t("من السيرة", "from the CV")}</span> «<bdi>${T.esc(String(c.evidence || "").split(" | ")[0])}</bdi>»` : `<span class="src form">${t("إجابة النموذج", "form answer")}</span> <b>${T.esc(c.evidence)}</b>`;
+			const conf = c.cv_quote && c.source !== "cv_quote" ? `<div class="hint"><span class="src cv">${t("تؤكده السيرة", "confirmed by CV")}</span> «<bdi>${T.esc(c.cv_quote)}</bdi>»</div>` : "";
+			return `${q}${conf}${c.contradiction ? ` <span class="chip amber">⇄ ${t("تعارض", "contradiction")}</span>` : ""}`;
 		};
 		const head = apps.map((a, i) => `<th><a href="${talent_ai.formUrl("Job Applicant", a.applicant)}">${T.esc(a.applicant_name)}</a><div style="margin-top:4px"><b class="score ${res[i].eligibility === "not_eligible" ? "off" : res[i].band}">${T.N(T.fmt1(res[i].score))}</b> ${T.chipBand(res[i].band, res[i].eligibility)}</div><div class="hint">${t("الترتيب", "rank")} ${res[i].rank ? T.N(res[i].rank) : "—"} · ${t("تغطية", "cov.")} ${T.pct(res[i].coverage)} · ${T.chipElig(res[i].eligibility)}</div></th>`).join("");
 		const rows = (d.criteria || []).map((c) => {

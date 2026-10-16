@@ -61,7 +61,7 @@ frappe.pages["ai-recruitment"].on_page_load = function (wrapper) {
 				<span class="n">${num[i]}</span>
 				<span class="ico">${frappe.utils.icon(x.icon, "md")}</span>
 				<span class="txt"><b>${T.esc(T.lang() === "ar" ? x.ar : x.en)}${x.newtab ? ` <span class="ext">↗</span>` : ""}</b>
-				<small>${T.esc(T.lang() === "ar" ? x.dar : x.den)}</small>
+				<small>${T.mix(T.lang() === "ar" ? x.dar : x.den)}</small>
 				${allowed ? "" : `<small class="deny">${t("غير متاح لدورك", "not available for your role")}</small>`}</span></button>`;
 		}).join("");
 		$body.html(`<div class="tai-home-head"><h1>${t("التوظيف الذكي", "AI Recruitment")}</h1>

@@ -291,7 +291,9 @@ def draft_criteria(name: str) -> dict:
 
 @frappe.whitelist()
 def templates_for(name: str) -> list[dict]:
+	require_hr()
 	doc = frappe.get_doc("AI Job Profile", name)
+	doc.check_permission("read")
 	filters = {"is_template": 1, "name": ["!=", name], "status": "Approved"}
 	if doc.designation:
 		filters["designation"] = doc.designation

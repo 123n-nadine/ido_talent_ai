@@ -8,6 +8,8 @@
 	const pill = (o, txt) => `<span class="indicator-pill ${ind(o)} filterable ellipsis"><span class="ellipsis">${txt}</span></span>`;
 
 	frappe.listview_settings["Job Applicant"] = Object.assign({}, base, {
+		// the ID is the applicant's e-mail, already in its own column; in a narrow column it read «com»
+		hide_name_column: true,
 		add_fields: Array.from(new Set([...(base.add_fields || []), ...add])),
 		formatters: Object.assign({}, base.formatters, {
 			ai_status(value, df, doc) {
@@ -15,16 +17,16 @@
 				const T = talent_ai;
 				const o = T.AIST[value];
 				const stale = doc.ai_stale ? ` · ${T.t("قديم", "stale")}` : "";
-				return pill(doc.ai_stale ? { cls: "amber" } : o, T.L(o) + stale);
+				return pill(doc.ai_stale ? { cls: "grey" } : o, T.L(o) + stale);
 			},
 			ai_score(value, df, doc) {
 				if (value == null || value === "" || doc.ai_status === "Processing" || doc.ai_status === "Failed") return "";
 				const T = talent_ai;
 				if (doc.ai_eligibility === "not_eligible") return `<b class="text-muted">${T.fmt1(value)}</b> ${pill({ cls: "red" }, T.t("غير مستوفٍ", "not eligible"))}`;
 				if (doc.ai_duplicate_of) return `<b class="text-muted">${T.fmt1(value)}</b> ${pill({ cls: "gray" }, T.t("مكرر", "duplicate"))}`;
-				if (doc.ai_stale) return `<b class="text-muted">${T.fmt1(value)}</b> ${pill({ cls: "amber" }, T.t("قديم", "stale"))}`;
+				if (doc.ai_stale) return `<b class="text-muted">${T.fmt1(value)}</b> ${pill({ cls: "grey" }, T.t("قديم", "stale"))}`;
 				const o = T.BAND[doc.ai_band];
-				const rank = doc.ai_rank ? ` <span class="text-muted">#${doc.ai_rank}</span>` : "";
+				const rank = doc.ai_rank ? ` <span class="text-muted" title="${T.t("الترتيب", "rank")}"><bdi>#${doc.ai_rank}</bdi></span>` : "";
 				return `<b>${T.fmt1(value)}</b> ${o ? pill(o, T.L(o)) : ""}${rank}`;
 			},
 			ai_band(value) {

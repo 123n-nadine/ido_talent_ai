@@ -1,5 +1,15 @@
 /* Talent AI — styles of the clickable prototype, scoped under .tai (never leaks into the desk). */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono&display=swap');
+/* IBM Plex Sans Arabic + IBM Plex Mono, served locally (SIL Open Font License 1.1, see OFL-IBM-Plex-Sans-Arabic.txt) */
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:400;font-display:swap;src:url('/assets/ido_talent_ai/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2') format('woff2');unicode-range:U+0600-06FF, U+0750-077F, U+0870-089F, U+08A0-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC}
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:400;font-display:swap;src:url('/assets/ido_talent_ai/fonts/ibm-plex-sans-arabic-latin-400-normal.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:500;font-display:swap;src:url('/assets/ido_talent_ai/fonts/ibm-plex-sans-arabic-arabic-500-normal.woff2') format('woff2');unicode-range:U+0600-06FF, U+0750-077F, U+0870-089F, U+08A0-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC}
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:500;font-display:swap;src:url('/assets/ido_talent_ai/fonts/ibm-plex-sans-arabic-latin-500-normal.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:600;font-display:swap;src:url('/assets/ido_talent_ai/fonts/ibm-plex-sans-arabic-arabic-600-normal.woff2') format('woff2');unicode-range:U+0600-06FF, U+0750-077F, U+0870-089F, U+08A0-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC}
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:600;font-display:swap;src:url('/assets/ido_talent_ai/fonts/ibm-plex-sans-arabic-latin-600-normal.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:700;font-display:swap;src:url('/assets/ido_talent_ai/fonts/ibm-plex-sans-arabic-arabic-700-normal.woff2') format('woff2');unicode-range:U+0600-06FF, U+0750-077F, U+0870-089F, U+08A0-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC}
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:700;font-display:swap;src:url('/assets/ido_talent_ai/fonts/ibm-plex-sans-arabic-latin-700-normal.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:400;font-display:swap;src:url('/assets/ido_talent_ai/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:600;font-display:swap;src:url('/assets/ido_talent_ai/fonts/ibm-plex-mono-latin-600-normal.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
 .tai{--blue:#1e4db5; --blue-dark:#173d93; --blue-soft:#e4ecfb; --blue-text:#1b3f94;
   --bg:#eef2fb; --card:#ffffff; --text:#1f2b47; --muted:#6f7d9c; --border:#e1e8f4; --border-2:#cbd6ea;
   --green:#1e8a4f; --green-bg:#dff4e6; --amber:#b36b00; --amber-bg:#fff1d6; --red:#c53030; --red-bg:#fde4e4;
@@ -240,87 +250,6 @@
 .tai .aihead .kpi b.amber{color:var(--amber)}
 .tai .aihead .kpi b.red{color:var(--red)}
 .tai .note.danger a{color:var(--red);text-decoration:underline}
-.tai .ul{margin:0;padding-inline-start:18px;font-size:13px;line-height:1.9}
-.tai .lbl{font-size:12px;display:block;margin-bottom:4px}
-.tai .lvl{display:inline-block;min-width:34px;text-align:center;border-radius:8px;padding:1px 6px;font-weight:700;font-size:12px;font-family:"IBM Plex Mono",Consolas,monospace;direction:ltr}
-.tai .lvl.l0{background:var(--red-bg);color:var(--red)}
-.tai .lvl.l25{background:#ffe9d6;color:#b34a00}
-.tai .lvl.l50{background:var(--amber-bg);color:var(--amber)}
-.tai .lvl.l75{background:#e3f3ea;color:#1e6f42}
-.tai .lvl.l100{background:var(--green-bg);color:var(--green)}
-.tai .src{display:inline-block;border-radius:6px;padding:0 6px;font-size:10.5px;font-weight:600;white-space:nowrap;vertical-align:middle}
-.tai .src.form{background:var(--blue-soft);color:var(--blue-text)}
-.tai .src.cv{background:#fff1d6;color:#7a4d00}
-.tai .src.missing{background:var(--grey-bg);color:var(--muted);border:1px dashed var(--border-2)}
-.tai .prop{display:inline-block;background:var(--purple-bg);color:var(--purple);border-radius:8px;padding:0 7px;font-size:10.5px;font-weight:600;margin-inline-start:6px;vertical-align:middle}
-.tai .rub{font-size:11px;line-height:1.5;white-space:normal}
-.tai .rub .rb{display:inline-block;margin-inline-end:8px;color:var(--muted)}
-.tai .rub .rb b{color:var(--text);font-family:Consolas,monospace;direction:ltr;display:inline-block}
-.tai .contra{display:grid;gap:4px;font-size:12px;background:#fff6f6;border:1px solid #f3c0c0;border-radius:8px;padding:6px 8px}
-.tai .multi{display:flex;gap:14px;flex-wrap:wrap;padding:8px 0}
-.tai .field.q label{color:var(--text)}
-.tai .pstep.skip{opacity:.45;border-style:dashed}
-.tai .crit.c5{grid-template-columns:1.4fr 150px 1.6fr}
-.tai .impact table td{padding:6px 10px}
-.tai .aihead .kpi b.blue{color:var(--blue)}
-.tai .aihead .kpi b.green{color:var(--green)}
-.tai .aihead .kpi b.amber{color:var(--amber)}
-.tai .aihead .kpi b.red{color:var(--red)}
-.tai .note.danger a{color:var(--red);text-decoration:underline}
-.tai .ul{margin:0;padding-inline-start:18px;font-size:13px;line-height:1.9}
-.tai .lbl{font-size:12px;display:block;margin-bottom:4px}
-.tai .lvl{display:inline-block;min-width:34px;text-align:center;border-radius:8px;padding:1px 6px;font-weight:700;font-size:12px;font-family:"IBM Plex Mono",Consolas,monospace;direction:ltr}
-.tai .lvl.l0{background:var(--red-bg);color:var(--red)}
-.tai .lvl.l25{background:#ffe9d6;color:#b34a00}
-.tai .lvl.l50{background:var(--amber-bg);color:var(--amber)}
-.tai .lvl.l75{background:#e3f3ea;color:#1e6f42}
-.tai .lvl.l100{background:var(--green-bg);color:var(--green)}
-.tai .src{display:inline-block;border-radius:6px;padding:0 6px;font-size:10.5px;font-weight:600;white-space:nowrap;vertical-align:middle}
-.tai .src.form{background:var(--blue-soft);color:var(--blue-text)}
-.tai .src.cv{background:#fff1d6;color:#7a4d00}
-.tai .src.missing{background:var(--grey-bg);color:var(--muted);border:1px dashed var(--border-2)}
-.tai .prop{display:inline-block;background:var(--purple-bg);color:var(--purple);border-radius:8px;padding:0 7px;font-size:10.5px;font-weight:600;margin-inline-start:6px;vertical-align:middle}
-.tai .rub{font-size:11px;line-height:1.5;white-space:normal}
-.tai .rub .rb{display:inline-block;margin-inline-end:8px;color:var(--muted)}
-.tai .rub .rb b{color:var(--text);font-family:Consolas,monospace;direction:ltr;display:inline-block}
-.tai .contra{display:grid;gap:4px;font-size:12px;background:#fff6f6;border:1px solid #f3c0c0;border-radius:8px;padding:6px 8px}
-.tai .multi{display:flex;gap:14px;flex-wrap:wrap;padding:8px 0}
-.tai .field.q label{color:var(--text)}
-.tai .pstep.skip{opacity:.45;border-style:dashed}
-.tai .crit.c5{grid-template-columns:1.4fr 150px 1.6fr}
-.tai .impact table td{padding:6px 10px}
-.tai .aihead .kpi b.blue{color:var(--blue)}
-.tai .aihead .kpi b.green{color:var(--green)}
-.tai .aihead .kpi b.amber{color:var(--amber)}
-.tai .aihead .kpi b.red{color:var(--red)}
-.tai .note.danger a{color:var(--red);text-decoration:underline}
-.tai .ul{margin:0;padding-inline-start:18px;font-size:13px;line-height:1.9}
-.tai .lbl{font-size:12px;display:block;margin-bottom:4px}
-.tai .lvl{display:inline-block;min-width:34px;text-align:center;border-radius:8px;padding:1px 6px;font-weight:700;font-size:12px;font-family:"IBM Plex Mono",Consolas,monospace;direction:ltr}
-.tai .lvl.l0{background:var(--red-bg);color:var(--red)}
-.tai .lvl.l25{background:#ffe9d6;color:#b34a00}
-.tai .lvl.l50{background:var(--amber-bg);color:var(--amber)}
-.tai .lvl.l75{background:#e3f3ea;color:#1e6f42}
-.tai .lvl.l100{background:var(--green-bg);color:var(--green)}
-.tai .src{display:inline-block;border-radius:6px;padding:0 6px;font-size:10.5px;font-weight:600;white-space:nowrap;vertical-align:middle}
-.tai .src.form{background:var(--blue-soft);color:var(--blue-text)}
-.tai .src.cv{background:#fff1d6;color:#7a4d00}
-.tai .src.missing{background:var(--grey-bg);color:var(--muted);border:1px dashed var(--border-2)}
-.tai .prop{display:inline-block;background:var(--purple-bg);color:var(--purple);border-radius:8px;padding:0 7px;font-size:10.5px;font-weight:600;margin-inline-start:6px;vertical-align:middle}
-.tai .rub{font-size:11px;line-height:1.5;white-space:normal}
-.tai .rub .rb{display:inline-block;margin-inline-end:8px;color:var(--muted)}
-.tai .rub .rb b{color:var(--text);font-family:Consolas,monospace;direction:ltr;display:inline-block}
-.tai .contra{display:grid;gap:4px;font-size:12px;background:#fff6f6;border:1px solid #f3c0c0;border-radius:8px;padding:6px 8px}
-.tai .multi{display:flex;gap:14px;flex-wrap:wrap;padding:8px 0}
-.tai .field.q label{color:var(--text)}
-.tai .pstep.skip{opacity:.45;border-style:dashed}
-.tai .crit.c5{grid-template-columns:1.4fr 150px 1.6fr}
-.tai .impact table td{padding:6px 10px}
-.tai .aihead .kpi b.blue{color:var(--blue)}
-.tai .aihead .kpi b.green{color:var(--green)}
-.tai .aihead .kpi b.amber{color:var(--amber)}
-.tai .aihead .kpi b.red{color:var(--red)}
-.tai .note.danger a{color:var(--red);text-decoration:underline}
 .tai .multi input{width:auto;min-height:0;margin:0 4px}
 .tai .rankrow .list-id{white-space:normal;line-height:2;display:flex;flex-wrap:wrap;gap:3px 4px;align-items:center}
 .tai .rankrow>div{overflow:hidden}
@@ -443,3 +372,75 @@
 .tai-home .tai-home-foot{margin-top:18px;font-size:13px}
 @media (max-width:1100px){.tai-home .tai-home-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:700px){.tai-home .tai-home-grid{grid-template-columns:1fr}.tai-home .tai-home-counts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ==== Design pass 2026-10-17: readable sizes, WCAG AA contrast, colours with one meaning, Frappe look ====
+   green = eligible / high · amber = medium / needs review · red = not eligible / low / failed ·
+   grey = stale / duplicate / neutral · blue = processing / information · purple = an HR edit */
+.tai{--muted:#56627c;--green-text:#166c3c;--amber-text:#8a5300;--red-text:#b42525;--grey-text:#475569;--grey-bg:#eef1f7;
+  --blue-text:#1b3f94;font-size:14px;line-height:1.65;background:transparent}
+.tai-site{background:#f4f6fa}
+.tai .chip{font-size:12.5px;padding:3px 10px;line-height:1.5;gap:6px}
+.tai .chip.green{color:var(--green-text)}
+.tai .chip.amber{color:var(--amber-text)}
+.tai .chip.red{color:var(--red-text)}
+.tai .chip.blue{color:var(--blue-text)}
+.tai .chip:not(.green):not(.amber):not(.red):not(.blue):not(.purple):not(.mand){background:var(--grey-bg);color:var(--grey-text)}
+.tai .chip.mand{background:transparent;color:var(--text);border:1px solid var(--border-2);font-weight:600}
+.tai .note{font-size:13px;color:var(--text);background:#f6f8fc;line-height:1.7}
+.tai .note.strong{color:var(--amber-text)}
+.tai .note.danger{color:var(--red-text)}
+.tai .note.grey{border-color:#94a3b8;background:var(--grey-bg);color:var(--grey-text)}
+.tai .note.info{border-color:var(--blue);background:var(--blue-soft);color:var(--blue-text)}
+.tai .src{font-size:12px;padding:1px 7px}
+.tai .src.cv{color:#6b4300}
+.tai .hint,.tai .list-id,.tai .audit,.tai .disclaimer,.tai .field .help,.tai .aihead .kpi small,.tai .mnode .box small,
+.tai .pipe-grid .pstep .t small,.tai .pstep .t small,.tai .rub,.tai .tag-hr,.tai .tag-off,.tai .poolwhy b,.tai th,.tai .card h2 small,.tai .ocrout .cf{font-size:12.5px}
+.tai .mnode .box .who{font-size:12px;padding:2px 9px}
+.tai .field label{font-size:13px}
+.tai .quote{font-size:13px;max-width:none;overflow-wrap:anywhere;white-space:normal;line-height:1.7}
+.tai td{overflow-wrap:anywhere}
+.tai .score.off{color:#6b7280}
+.tai .cvtext,.tai .ocrline .ln{unicode-bidi:plaintext}
+.tai .kv .bands{display:flex;flex-wrap:wrap;gap:6px}
+.tai .bar.sim i{background:var(--blue)}
+.tai .pos.off{background:var(--grey-bg);color:var(--muted)}
+/* Frappe look inside the desk: the page keeps Frappe's background; cards use Frappe's border and radius */
+.layout-main-section .tai .card,.modal .tai .card,.frappe-control .tai .card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e2e6ee);
+  box-shadow:none;border-radius:var(--border-radius-lg,12px);padding:18px 20px}
+.tai .card h2{font-size:15.5px;font-weight:600;color:var(--heading-color,var(--text))}
+.layout-main-section .tai .kpi,.modal .tai .kpi,.frappe-control .tai .kpi{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e2e6ee);box-shadow:none}
+/* ranking and talent pool rows: name column first, strengths on their own line under the row */
+.tai .rankrow.r2{grid-template-columns:28px 40px minmax(150px,1.5fr) 64px 104px minmax(80px,1fr) 96px 120px;row-gap:8px}
+.tai .rankrow.r2 .c-str,.tai .rankrow.r4 .c-str{grid-column:3 / -1;display:flex;flex-wrap:wrap;gap:6px}
+.tai .rankrow.r3{grid-template-columns:40px minmax(180px,1.6fr) 72px minmax(160px,1.6fr)}
+.tai .rankrow.r3 .c-chips{display:flex;flex-wrap:wrap;gap:6px}
+.tai .rankrow.r4{grid-template-columns:40px minmax(150px,1.3fr) minmax(170px,1.3fr) 120px minmax(150px,1fr);row-gap:8px}
+.tai .rankrow.r4 .c-str{grid-column:2 / -1}
+.tai .rankrow .c-name b{overflow-wrap:anywhere}
+.tai .rankrow .c-bar{width:auto}
+@media (max-width:1440px){.tai .rankrow.r2{grid-template-columns:28px 38px minmax(140px,1.6fr) 60px 100px minmax(60px,.8fr) 92px 112px}}
+@media (max-width:1100px){.tai .rankrow.r2 .c-bar{display:none}.tai .rankrow.r2{grid-template-columns:28px 38px minmax(140px,1fr) 60px 100px 92px 112px}}
+.tai .tag-off,.tai .dev .wr,.tai .rb,.tai .audit code,.tai .legend,.tai .cf,.tai .mapcard .who,.tai .src,.tai .prop,.tai .lbl,.tai .contra,.tai .poolwhy{font-size:12.5px}
+.tai .field.new label::after,.tai .nav a.new::after{font-size:11.5px}
+.tai .lvl.l0{color:var(--red-text)}.tai .lvl.l50{color:var(--amber-text)}.tai .lvl.l100{color:var(--green-text)}.tai .lvl.l25{color:#9a3f00}
+.tai .cf.hi,.tai .ocrout .cf{color:var(--green-text)}.tai .cf.mid{color:var(--amber-text)}.tai .cf.lo{color:var(--red-text)}
+.tai .score.high{color:var(--green-text)}.tai .score.medium{color:var(--amber-text)}.tai .score.low{color:var(--red-text)}
+.tai .was,.tai .poolwhy .was,.tai .crit .was{color:var(--red-text)}.tai .poolwhy .now{color:var(--green-text)}
+.tai .btn.danger{color:var(--red-text)}.tai .btn.ok{color:var(--green-text)}.tai .btn.warn{color:var(--amber-text)}
+.tai .warnbox{color:var(--amber-text)}
+.tai .aihead .kpi b.green{color:var(--green-text)}.tai .aihead .kpi b.amber{color:var(--amber-text)}.tai .aihead .kpi b.red{color:var(--red-text)}
+.tai .who.applicant{color:var(--green-text)}
+.tai code,.tai small code,.tai .kv small,.tai small,.tai .kpis5 .kpi small{font-size:12.5px}
+.tai .mnode .arrow,.tai .mapcard .arrow,.tai span.arrow{color:#7b8499}
+.form-layout .frappe-control[data-fieldtype=HTML] .tai code{font-size:12.5px}
+/* processing stages: readable notes */
+.tai .stages .pstep .t small{line-height:1.6;overflow-wrap:anywhere}
+.tai .stages{gap:10px}
+/* public form */
+.tai-site .formcard .field .help{font-size:12.5px;line-height:1.6}
+.tai-site .formcard label{font-size:13.5px}
+.tai-site .formcard input,.tai-site .formcard select,.tai-site .formcard textarea{font-size:15px}
+/* the 10 stages follow the width of their own card (the AI section is narrower than the screen) */
+.tai .card:has(> .stages){container-type:inline-size}
+@container (max-width:900px){.tai .stages{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@container (max-width:600px){.tai .stages{grid-template-columns:repeat(2,minmax(0,1fr))}}

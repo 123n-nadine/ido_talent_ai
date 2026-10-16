@@ -12,21 +12,20 @@
  ],
  "fields": [
   {
-   "columns": 1,
    "fieldname": "question_key",
    "fieldtype": "Data",
-   "in_list_view": 1,
+   "in_list_view": 0,
    "label": "Key"
   },
   {
-   "columns": 4,
+   "columns": 5,
    "fieldname": "question",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Question"
   },
   {
-   "columns": 3,
+   "columns": 4,
    "fieldname": "answer",
    "fieldtype": "Small Text",
    "in_list_view": 1,
@@ -43,7 +42,7 @@
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-10-16 00:00:00.000000",
+ "modified": "2026-10-16 07:31:23.778865",
  "modified_by": "Administrator",
  "module": "Talent AI",
  "name": "AI Applicant Answer",

@@ -25,6 +25,11 @@ USERS = {
 	"hr.manager@example.com": ("مديرة الموارد البشرية", ["HR Manager", "HR User", "Employee"]),
 	"hr.user@example.com": ("أخصائي التوظيف", ["HR User", "Employee"]),
 	"employee@example.com": ("موظف بدون صلاحيات توظيف", ["Employee"]),
+	# the other recruitment-related roles of HRMS, for the permission checks of the full test
+	"interviewer@example.com": ("مقابِل من قسم العمليات", ["Interviewer", "Employee"]),
+	"ess@example.com": ("موظف خدمة ذاتية", ["Employee Self Service"]),
+	"sysmanager@example.com": ("مدير النظام", ["System Manager"]),
+	"portal.applicant@example.com": ("متقدم بحساب على الموقع", []),  # Website User, no desk
 }
 
 
@@ -91,17 +96,37 @@ def fix_scheduler_times() -> int:
 	return len(names)
 
 
+EMPLOYEE_ROLES = {"Employee", "Employee Self Service"}
+
+
+def ensure_employee(email: str, full_name: str) -> None:
+	"""ERPNext removes the Employee roles from a user without an Employee record
+	(validate_employee_role), so the demo users that need them get a synthetic one first."""
+	if frappe.db.exists("Employee", {"user_id": email}):
+		return
+	company = frappe.defaults.get_global_default("company") or frappe.db.get_value("Company", {}, "name")
+	gender = "Male" if frappe.db.exists("Gender", "Male") else frappe.db.get_value("Gender", {}, "name")
+	frappe.get_doc({
+		"doctype": "Employee", "first_name": full_name, "gender": gender, "date_of_birth": "1990-01-01",
+		"date_of_joining": "2024-01-01", "company": company, "status": "Active", "user_id": email,
+	}).insert(ignore_permissions=True)
+
+
 def ensure_users(passwords: dict) -> None:
 	from frappe.utils.password import update_password
 
 	for email, (full_name, roles) in USERS.items():
 		if not frappe.db.exists("User", email):
 			u = frappe.get_doc(
-				{"doctype": "User", "email": email, "first_name": full_name, "language": "ar", "send_welcome_email": 0, "user_type": "System User"}
+				{"doctype": "User", "email": email, "first_name": full_name, "language": "ar", "send_welcome_email": 0,
+				 "user_type": "System User" if roles else "Website User"}
 			)
 			u.insert(ignore_permissions=True)
+		if EMPLOYEE_ROLES & set(roles):
+			ensure_employee(email, full_name)
 		u = frappe.get_doc("User", email)
-		u.add_roles(*roles)
+		if roles:
+			u.add_roles(*roles)
 		if passwords.get(email):
 			update_password(email, passwords[email])
 
