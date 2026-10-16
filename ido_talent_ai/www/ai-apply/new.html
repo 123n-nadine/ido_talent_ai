@@ -1,0 +1,184 @@
+{% extends "templates/web.html" %}
+
+{% block title %}نموذج التقديم{% if opening %} — {{ opening.job_title }}{% endif %}{% endblock %}
+
+{% block head_include %}
+<link rel="stylesheet" href="/assets/ido_talent_ai/css/talent_ai.css">
+<style>
+	.tai-site { margin: 0 -15px; }
+	.tai .formcard .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+	.tai .field { margin-bottom: 4px; }
+	.tai .langs { display: flex; gap: 6px; justify-content: flex-end; margin-bottom: 8px; }
+	.tai .multi label { display: flex; gap: 6px; align-items: center; font-weight: 400; color: var(--text); }
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="tai tai-site" id="tai-apply" dir="rtl" lang="ar">
+	<div class="wrap">
+	{% if error %}
+		<div class="formcard"><h1>نموذج التقديم</h1><div class="errors">{{ error }}</div>
+		<p><a href="/jobs">العودة إلى الوظائف</a></p></div>
+	{% else %}
+		<div id="tai-form-root"><div class="formcard"><span class="spin"></span></div></div>
+		<script type="application/json" id="tai-config">{{ form_config }}</script>
+		<script type="application/json" id="tai-countries">{{ countries_json }}</script>
+		<script type="application/json" id="tai-requirements">{{ requirements_json }}</script>
+		<script type="application/json" id="tai-consent">{{ meta_json }}</script>
+	{% endif %}
+	</div>
+</div>
+{% endblock %}
+
+{% block script %}
+{% if not error %}
+<script>
+(function () {
+	const cfg = JSON.parse(document.getElementById("tai-config").textContent);
+	const countries = JSON.parse(document.getElementById("tai-countries").textContent);
+	const reqs = JSON.parse(document.getElementById("tai-requirements").textContent);
+	const meta = JSON.parse(document.getElementById("tai-consent").textContent);
+	const root = document.getElementById("tai-form-root");
+	const box = document.getElementById("tai-apply");
+	const S = { lang: new URLSearchParams(location.search).get("lang") === "en" ? "en" : "ar", values: {}, answers: {}, errors: [], sent: false, busy: false };
+	const t = (ar, en) => (S.lang === "ar" ? ar : en);
+	const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+	const req = ' <span class="req">*</span>';
+
+	function input(name, label, type, help, required, attrs) {
+		const v = S.values[name] == null ? "" : S.values[name];
+		return `<div class="field"><label for="f-${name}">${label}${required ? req : ""}</label><input id="f-${name}" name="${name}" type="${type || "text"}" value="${esc(v)}" ${attrs || ""} ${required ? "required" : ""}>${help ? `<div class="help">${help}</div>` : ""}</div>`;
+	}
+	function question(q) {
+		const label = S.lang === "en" && q.label_en ? q.label_en : q.label;
+		const r = q.required === false ? "" : req;
+		const v = S.answers[q.key];
+		const hint = q.hint ? `<div class="help">${esc(q.hint)}</div>` : "";
+		const opts = q.options || [];
+		if (q.type === "select" || q.type === "boolean") {
+			const list = q.type === "boolean" && !opts.length ? ["نعم", "لا"] : opts;
+			return `<div class="field q"><label>${esc(label)}${r}</label><select data-q="${q.key}"><option value="">${t("— اختر —", "— choose —")}</option>${list.map((o) => `<option value="${esc(o)}" ${v === o ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>${hint}</div>`;
+		}
+		if (q.type === "multiselect") {
+			return `<div class="field q" style="grid-column:1/-1"><label>${esc(label)}${r}</label><div class="multi">${opts.map((o) => `<label><input type="checkbox" data-qm="${q.key}" value="${esc(o)}" ${(v || []).includes(o) ? "checked" : ""}> ${esc(o)}</label>`).join("")}</div>${hint}</div>`;
+		}
+		if (q.type === "text") {
+			return `<div class="field q" style="grid-column:1/-1"><label>${esc(label)}${r}</label><textarea data-q="${q.key}">${esc(v || "")}</textarea>${hint}</div>`;
+		}
+		if (q.type === "date") {
+			return `<div class="field q"><label>${esc(label)}${r}</label><input type="date" data-q="${q.key}" value="${esc(v || "")}">${hint}</div>`;
+		}
+		// the 0-vs-blank hint is shown once, under every number question
+		return `<div class="field q"><label>${esc(label)}${r}</label><input type="number" min="0" step="0.5" inputmode="decimal" data-q="${q.key}" value="${v === "" || v == null ? "" : esc(v)}"><div class="help">${t("اكتب 0 إذا لا توجد خبرة. الفراغ يعني «لم يُجب».", "Write 0 if you have none. Blank means “not answered”.")}</div></div>`;
+	}
+
+	function draw() {
+		box.dir = S.lang === "ar" ? "rtl" : "ltr";
+		box.lang = S.lang;
+		if (S.sent) {
+			root.innerHTML = `<div class="formcard success"><div class="ok">✓</div><h1>${t("شكرًا لتقديمك", "Thank you for applying")}</h1><p>${t("تم استلام طلبك لوظيفة", "Your application for")} <b>${esc(meta.title)}</b> ${t("وسيُراجع من فريق التوظيف.", "was received and will be reviewed by the recruitment team.")}</p><p class="hint">${t("لن يُتخذ أي قرار آلي بشأنك دون مراجعة بشرية.", "No automated decision is taken about you without human review.")}</p><a class="btn" href="/jobs">${t("العودة إلى الوظائف", "Back to jobs")}</a></div>`;
+			return;
+		}
+		const nat = S.values.nationality || "";
+		root.innerHTML = `<form class="formcard" id="tai-form" novalidate>
+			<div class="langs"><div class="seg"><button type="button" class="${S.lang === "ar" ? "on" : ""}" data-lang="ar">عربي</button><button type="button" class="${S.lang === "en" ? "on" : ""}" data-lang="en">English</button></div></div>
+			<h1>${t("نموذج التقديم", "Job application")}</h1>
+			<div class="field"><label>${t("الشاغر الوظيفي", "Job opening")}</label><div class="val ro">${esc(meta.title)}${meta.company ? " — " + esc(meta.company) : ""}</div></div>
+			${reqs.length ? `<div class="reqs"><b>${t("شروط التقديم", "Eligibility requirements")}</b><ul>${reqs.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></div>` : ""}
+			${S.errors.length ? `<div class="errors"><b>${t("راجع ما يلي:", "Please check:")}</b><ul style="margin:6px 0 0">${S.errors.map((e) => `<li>${esc(e)}</li>`).join("")}</ul></div>` : ""}
+			<div class="sechead">${t("بياناتك", "Your details")}</div>
+			<div class="grid2">
+				${input("applicant_name", t("الاسم الكامل", "Full name"), "text", "", true, 'autocomplete="name"')}
+				${input("email_id", t("البريد الإلكتروني", "Email"), "email", "", true, 'autocomplete="email" dir="ltr"')}
+				${input("phone_number", t("رقم الجوال", "Mobile"), "tel", "", false, 'autocomplete="tel" dir="ltr"')}
+				<div class="field"><label for="f-nationality">${t("الجنسية", "Nationality")}${req}</label><select id="f-nationality" name="nationality" required><option value="">${t("— اختر —", "— choose —")}</option>${countries.map((c) => `<option value="${esc(c.value)}" ${nat === c.value ? "selected" : ""}>${esc(S.lang === "ar" ? c.label : c.value)}</option>`).join("")}</select></div>
+				<div class="field"><label for="f-id_type">${t("نوع الهوية", "ID type")}${req}</label><select id="f-id_type" name="id_type" required><option value="">${t("— اختر —", "— choose —")}</option><option value="هوية وطنية" ${S.values.id_type === "هوية وطنية" ? "selected" : ""}>${t("هوية وطنية", "National ID")}</option><option value="إقامة" ${S.values.id_type === "إقامة" ? "selected" : ""}>${t("إقامة", "Iqama")}</option></select></div>
+				${input("national_id", t("رقم الهوية", "ID number"), "text", t("لا يُعرض ولا يُرسل إلى خدمة الذكاء الاصطناعي. يُستخدم فقط لكشف الطلبات المكررة.", "Never displayed or sent to the AI service. Used only to detect duplicate applications."), true, 'inputmode="numeric" dir="ltr"')}
+				${input("date_of_birth", t("تاريخ الميلاد", "Date of birth"), "date", t("يُرسل العمر كرقم فقط.", "Only the age is sent, as a number."), true)}
+				${cfg.needs_height ? input("height_cm", t("الطول (سم)", "Height (cm)"), "number", t("مطلوب لهذا الشاغر", "Required for this opening"), true, 'min="100" max="230"') : ""}
+				${cfg.needs_weight ? input("weight_kg", t("الوزن (كجم)", "Weight (kg)"), "number", t("مطلوب لهذا الشاغر", "Required for this opening"), true, 'min="30" max="250"') : ""}
+			</div>
+			${cfg.questions.length ? `<div class="sechead">${t("أسئلة الفرز", "Screening questions")}</div><div class="grid2">${cfg.questions.map(question).join("")}</div>` : ""}
+			<div class="sechead">${t("السيرة الذاتية", "CV / résumé")}</div>
+			<div class="field"><label for="f-cv">${t("السيرة الذاتية (اختياري)", "CV (optional)")}</label><input id="f-cv" name="cv" type="file" accept=".pdf,.docx,.doc,.rtf,.jpg,.jpeg,.png"><div class="help">${t("PDF أو Word أو صورة، حتى 10 ميجابايت. السيرة تؤكد إجاباتك ولا تحل محلها.", "PDF, Word or image, up to 10 MB. The CV confirms your answers, it does not replace them.")}</div></div>
+			<label class="chk" style="margin-top:14px"><input type="checkbox" id="f-consent" ${S.values.ai_consent ? "checked" : ""}><span><b>${t("موافقة على المعالجة", "Consent to processing")}${req}</b><br><span class="hint">${esc(meta.text || "")}</span></span></label>
+			<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><a class="btn" href="/jobs">${t("إلغاء", "Cancel")}</a><button class="btn primary" type="submit" ${S.busy ? "disabled" : ""}>${S.busy ? '<span class="spin"></span> ' : ""}${t("إرسال الطلب", "Submit application")}</button></div>
+		</form>`;
+	}
+
+	function collect() {
+		const f = document.getElementById("tai-form");
+		if (!f) return;
+		f.querySelectorAll("input[name],select[name]").forEach((el) => { if (el.type !== "file") S.values[el.name] = el.value; });
+		S.values.ai_consent = document.getElementById("f-consent").checked;
+		f.querySelectorAll("[data-q]").forEach((el) => (S.answers[el.dataset.q] = el.value.trim()));
+		const multi = {};
+		f.querySelectorAll("[data-qm]").forEach((el) => { multi[el.dataset.qm] = multi[el.dataset.qm] || []; if (el.checked) multi[el.dataset.qm].push(el.value); });
+		Object.assign(S.answers, multi);
+	}
+
+	function validate() {
+		const e = [];
+		const v = S.values;
+		if (!(v.applicant_name || "").trim()) e.push(t("الاسم الكامل مطلوب", "Full name is required"));
+		if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.email_id || "")) e.push(t("البريد الإلكتروني غير صحيح", "The email is not valid"));
+		if (!v.nationality) e.push(t("الجنسية مطلوبة", "Nationality is required"));
+		if (!v.id_type || !(v.national_id || "").trim()) e.push(t("نوع الهوية ورقمها مطلوبان", "ID type and number are required"));
+		if (!v.date_of_birth) e.push(t("تاريخ الميلاد مطلوب", "Date of birth is required"));
+		if (cfg.needs_height && !v.height_cm) e.push(t("الطول مطلوب لهذا الشاغر", "Height is required for this opening"));
+		if (cfg.needs_weight && !v.weight_kg) e.push(t("الوزن مطلوب لهذا الشاغر", "Weight is required for this opening"));
+		cfg.questions.forEach((q) => {
+			const a = S.answers[q.key];
+			if (q.required !== false && (a == null || a === "" || (Array.isArray(a) && !a.length))) e.push(t(`السؤال «${q.label}» مطلوب`, `“${q.label_en || q.label}” is required`));
+		});
+		const cv = document.getElementById("f-cv").files[0];
+		if (cv && cv.size > 10 * 1024 * 1024) e.push(t("حجم ملف السيرة أكبر من 10 ميجابايت", "The CV file is larger than 10 MB"));
+		if (!v.ai_consent) e.push(t("الموافقة على معالجة البيانات مطلوبة", "Consent to processing is required"));
+		return e;
+	}
+
+	root.addEventListener("click", (ev) => {
+		const b = ev.target.closest("[data-lang]");
+		if (!b) return;
+		collect();
+		const cv = document.getElementById("f-cv");
+		const file = cv && cv.files[0];
+		S.lang = b.dataset.lang;
+		draw();
+		if (file) { const dt = new DataTransfer(); dt.items.add(file); document.getElementById("f-cv").files = dt.files; }
+	});
+
+	root.addEventListener("submit", (ev) => {
+		ev.preventDefault();
+		collect();
+		const cvInput = document.getElementById("f-cv");
+		const file = cvInput.files[0];
+		S.errors = validate();
+		if (S.errors.length) { draw(); if (file) { const dt = new DataTransfer(); dt.items.add(file); document.getElementById("f-cv").files = dt.files; } root.scrollIntoView({ behavior: "smooth" }); return; }
+		const fd = new FormData();
+		fd.append("job_title", cfg.job_title);
+		["applicant_name", "email_id", "phone_number", "nationality", "id_type", "national_id", "date_of_birth", "height_cm", "weight_kg"].forEach((k) => fd.append(k, S.values[k] || ""));
+		fd.append("ai_consent", S.values.ai_consent ? "1" : "0");
+		fd.append("answers", JSON.stringify(S.answers));
+		if (file) fd.append("cv", file, file.name);
+		S.busy = true;
+		draw();
+		const headers = { Accept: "application/json" };
+		if (window.frappe && frappe.csrf_token && frappe.csrf_token !== "{{ csrf_token }}") headers["X-Frappe-CSRF-Token"] = frappe.csrf_token;
+		fetch("/api/method/ido_talent_ai.api.apply", { method: "POST", body: fd, headers, credentials: "same-origin" })
+			.then((r) => r.json().then((j) => ({ status: r.status, j })))
+			.then(({ status, j }) => {
+				S.busy = false;
+				const m = j.message || {};
+				if (status === 200 && m.ok) { S.sent = true; draw(); window.scrollTo(0, 0); return; }
+				S.errors = m.errors || [t("تعذّر إرسال الطلب، حاول مرة أخرى.", "The application could not be sent, try again.")];
+				if (j._server_messages) { try { S.errors = JSON.parse(j._server_messages).map((x) => JSON.parse(x).message); } catch (e) { /* keep the generic message */ } }
+				draw();
+			})
+			.catch(() => { S.busy = false; S.errors = [t("تعذّر الاتصال بالخادم، حاول مرة أخرى.", "Could not reach the server, try again.")]; draw(); });
+	});
+	draw();
+})();
+</script>
+{% endif %}
+{% endblock %}

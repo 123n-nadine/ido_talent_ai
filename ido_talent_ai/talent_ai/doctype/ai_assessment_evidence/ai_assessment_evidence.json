@@ -1,0 +1,148 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-10-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "criterion_key",
+  "criterion",
+  "weight",
+  "mandatory",
+  "score",
+  "effective_level",
+  "source",
+  "field",
+  "evidence_text",
+  "missing_data",
+  "contradiction",
+  "confirmed_by_cv",
+  "cv_quote",
+  "cv_level",
+  "form_level",
+  "overridden_level",
+  "override_reason",
+  "override_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "criterion_key",
+   "fieldtype": "Data",
+   "label": "Key"
+  },
+  {
+   "columns": 2,
+   "fieldname": "criterion",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Criterion"
+  },
+  {
+   "columns": 1,
+   "fieldname": "weight",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Weight (%)",
+   "precision": "1"
+  },
+  {
+   "fieldname": "mandatory",
+   "fieldtype": "Check",
+   "label": "Mandatory"
+  },
+  {
+   "columns": 1,
+   "fieldname": "score",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Level"
+  },
+  {
+   "columns": 1,
+   "fieldname": "effective_level",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Effective level"
+  },
+  {
+   "columns": 1,
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Source",
+   "options": "\nform_field\ncv_quote\nhr_override"
+  },
+  {
+   "fieldname": "field",
+   "fieldtype": "Data",
+   "label": "Field"
+  },
+  {
+   "columns": 3,
+   "fieldname": "evidence_text",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Evidence"
+  },
+  {
+   "columns": 1,
+   "fieldname": "missing_data",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Missing evidence"
+  },
+  {
+   "fieldname": "contradiction",
+   "fieldtype": "Check",
+   "label": "Contradiction"
+  },
+  {
+   "fieldname": "confirmed_by_cv",
+   "fieldtype": "Check",
+   "label": "Confirmed by CV"
+  },
+  {
+   "fieldname": "cv_quote",
+   "fieldtype": "Small Text",
+   "label": "CV quote"
+  },
+  {
+   "fieldname": "cv_level",
+   "fieldtype": "Int",
+   "label": "CV level"
+  },
+  {
+   "fieldname": "form_level",
+   "fieldtype": "Int",
+   "label": "Form level"
+  },
+  {
+   "fieldname": "overridden_level",
+   "fieldtype": "Int",
+   "label": "HR level"
+  },
+  {
+   "fieldname": "override_reason",
+   "fieldtype": "Small Text",
+   "label": "Override reason"
+  },
+  {
+   "fieldname": "override_by",
+   "fieldtype": "Data",
+   "label": "Override by"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Talent AI",
+ "name": "AI Assessment Evidence",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

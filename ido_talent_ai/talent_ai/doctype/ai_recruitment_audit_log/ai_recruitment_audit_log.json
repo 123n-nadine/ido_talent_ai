@@ -1,0 +1,119 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-10-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "timestamp",
+  "action",
+  "actor",
+  "reference_doctype",
+  "reference_name",
+  "job_opening",
+  "column_break_log",
+  "profile_version",
+  "reason",
+  "details"
+ ],
+ "fields": [
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Time"
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Action"
+  },
+  {
+   "fieldname": "actor",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "User"
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference DocType",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Reference",
+   "options": "reference_doctype"
+  },
+  {
+   "fieldname": "job_opening",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Job Opening",
+   "options": "Job Opening"
+  },
+  {
+   "fieldname": "column_break_log",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "profile_version",
+   "fieldtype": "Int",
+   "label": "Profile version"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "details",
+   "fieldtype": "Code",
+   "label": "Details",
+   "options": "JSON"
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-16 06:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Talent AI",
+ "name": "AI Recruitment Audit Log",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager"
+  },
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User"
+  },
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager"
+  }
+ ],
+ "read_only": 0,
+ "sort_field": "timestamp",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

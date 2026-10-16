@@ -1,0 +1,75 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-10-16 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "fact",
+  "operator",
+  "value",
+  "if_missing",
+  "requirement_text"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "fact",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Fact",
+   "options": "nationality\nheight_cm\nweight_kg\nage\ngender",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "operator",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Operator",
+   "options": "in\nnot_in\n>=\n<=\n>\n<\n==\n!=\nbetween",
+   "reqd": 1
+  },
+  {
+   "columns": 3,
+   "description": "Country names or values separated by commas; between = low, high",
+   "fieldname": "value",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Value",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "default": "review",
+   "fieldname": "if_missing",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "If missing",
+   "options": "review",
+   "read_only": 1
+  },
+  {
+   "columns": 3,
+   "fieldname": "requirement_text",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Requirement",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Talent AI",
+ "name": "AI Job Rule",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

@@ -1,0 +1,217 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-10-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "engine_section",
+  "enabled",
+  "auto_screen_on_apply",
+  "engine_url",
+  "api_key",
+  "request_timeout",
+  "column_break_engine",
+  "callback_url",
+  "callback_secret",
+  "id_token_secret",
+  "ai_section",
+  "provider",
+  "model",
+  "judge_prompt",
+  "column_break_ai",
+  "ocr_provider",
+  "timeout",
+  "max_retries",
+  "last_synced",
+  "engine_status",
+  "data_section",
+  "allowed_facts",
+  "retention_days",
+  "column_break_data",
+  "consent_version",
+  "consent_text"
+ ],
+ "fields": [
+  {
+   "fieldname": "engine_section",
+   "fieldtype": "Section Break",
+   "label": "Engine"
+  },
+  {
+   "default": "1",
+   "description": "When off, applications keep working normally without AI screening.",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_screen_on_apply",
+   "fieldtype": "Check",
+   "label": "Auto-screen on apply"
+  },
+  {
+   "default": "http://api:8000",
+   "fieldname": "engine_url",
+   "fieldtype": "Data",
+   "label": "Engine URL"
+  },
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "label": "Engine API Key"
+  },
+  {
+   "default": "30",
+   "fieldname": "request_timeout",
+   "fieldtype": "Int",
+   "label": "HTTP timeout (seconds)"
+  },
+  {
+   "fieldname": "column_break_engine",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "URL the engine calls with results (HMAC signed). Leave empty to use this site's URL.",
+   "fieldname": "callback_url",
+   "fieldtype": "Data",
+   "label": "Callback URL"
+  },
+  {
+   "fieldname": "callback_secret",
+   "fieldtype": "Password",
+   "label": "Callback Secret"
+  },
+  {
+   "description": "HMAC secret for national-ID tokens used for duplicate detection. It never leaves this site.",
+   "fieldname": "id_token_secret",
+   "fieldtype": "Password",
+   "label": "ID Token Secret"
+  },
+  {
+   "description": "Read from and written to the engine through /v1/settings.",
+   "fieldname": "ai_section",
+   "fieldtype": "Section Break",
+   "label": "AI provider (owned by the engine)"
+  },
+  {
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "local\ncloud\nfake"
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "label": "Model"
+  },
+  {
+   "fieldname": "judge_prompt",
+   "fieldtype": "Data",
+   "label": "Judge prompt"
+  },
+  {
+   "fieldname": "column_break_ai",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ocr_provider",
+   "fieldtype": "Select",
+   "label": "OCR provider",
+   "options": "paddle_cpu\npaddle_vl\nnone\ncloud\nfake"
+  },
+  {
+   "fieldname": "timeout",
+   "fieldtype": "Int",
+   "label": "LLM timeout (seconds)"
+  },
+  {
+   "default": "3",
+   "fieldname": "max_retries",
+   "fieldtype": "Int",
+   "label": "Max retries"
+  },
+  {
+   "fieldname": "last_synced",
+   "fieldtype": "Datetime",
+   "label": "Last synced with the engine",
+   "read_only": 1
+  },
+  {
+   "fieldname": "engine_status",
+   "fieldtype": "HTML",
+   "label": "Engine status"
+  },
+  {
+   "fieldname": "data_section",
+   "fieldtype": "Section Break",
+   "label": "Data and consent"
+  },
+  {
+   "default": "nationality\nage\nheight_cm\nweight_kg",
+   "description": "One per line. Only these facts are sent to the engine. Name, e-mail, phone, ID, date of birth and photo are never sent.",
+   "fieldname": "allowed_facts",
+   "fieldtype": "Small Text",
+   "label": "Allowed facts"
+  },
+  {
+   "default": "365",
+   "fieldname": "retention_days",
+   "fieldtype": "Int",
+   "label": "Retention (days)"
+  },
+  {
+   "fieldname": "column_break_data",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "v1",
+   "fieldname": "consent_version",
+   "fieldtype": "Data",
+   "label": "Consent text version"
+  },
+  {
+   "default": "أوافق على معالجة بياناتي وإجاباتي وسيرتي الذاتية آليًا لغرض الفرز الأولي لهذه الوظيفة، مع بقاء القرار النهائي بيد فريق الموارد البشرية، والاحتفاظ بها لمدة لا تتجاوز سنة.",
+   "fieldname": "consent_text",
+   "fieldtype": "Small Text",
+   "label": "Consent text"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Talent AI",
+ "name": "AI Recruitment Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

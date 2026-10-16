@@ -1,0 +1,161 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:AI-JOB-{#####}",
+ "creation": "2026-10-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "job_type",
+  "status",
+  "reference_doctype",
+  "reference_name",
+  "job_opening",
+  "column_break_attempts",
+  "attempts",
+  "max_attempts",
+  "engine_screening_id",
+  "queued_on",
+  "started_on",
+  "finished_on",
+  "duration_s",
+  "error_section",
+  "error_message"
+ ],
+ "fields": [
+  {
+   "fieldname": "job_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Job type",
+   "options": "Screening\nRescreen\nTalent Pool\nCriteria Draft"
+  },
+  {
+   "default": "Queued",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Queued\nRunning\nCompleted\nFailed"
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference DocType",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Reference",
+   "options": "reference_doctype"
+  },
+  {
+   "fieldname": "job_opening",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Job Opening",
+   "options": "Job Opening"
+  },
+  {
+   "fieldname": "column_break_attempts",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attempts",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Attempts"
+  },
+  {
+   "fieldname": "max_attempts",
+   "fieldtype": "Int",
+   "label": "Max attempts"
+  },
+  {
+   "fieldname": "engine_screening_id",
+   "fieldtype": "Data",
+   "label": "Engine screening ID"
+  },
+  {
+   "fieldname": "queued_on",
+   "fieldtype": "Datetime",
+   "label": "Queued on"
+  },
+  {
+   "fieldname": "started_on",
+   "fieldtype": "Datetime",
+   "label": "Started on"
+  },
+  {
+   "fieldname": "finished_on",
+   "fieldtype": "Datetime",
+   "label": "Finished on"
+  },
+  {
+   "fieldname": "duration_s",
+   "fieldtype": "Float",
+   "label": "Duration (s)",
+   "precision": "1"
+  },
+  {
+   "fieldname": "error_section",
+   "fieldtype": "Section Break",
+   "label": "Error"
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Small Text",
+   "label": "Error message"
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Talent AI",
+ "name": "AI Recruitment Job",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}
