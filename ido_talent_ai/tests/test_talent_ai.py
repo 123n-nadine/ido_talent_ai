@@ -302,6 +302,13 @@ class TestTalentAI(IntegrationTestCase):
 		doc.criteria[0].weight = 60
 		doc.save()
 
+	def test_ai_section_is_on_the_main_tab_of_the_opening(self):
+		"""The guide screenshots found the Talent AI section of Job Opening inside the «Pay Details» tab."""
+		names = [f.fieldname for f in frappe.get_meta("Job Opening").fields]
+		first_tab = next((i for i, f in enumerate(frappe.get_meta("Job Opening").fields) if f.fieldtype == "Tab Break"), len(names))
+		self.assertLess(names.index("ai_section"), first_tab)
+		self.assertLess(names.index("ai_links"), first_tab)
+
 	def test_opening_points_the_apply_button_to_the_ai_form(self):
 		op = frappe.get_doc("Job Opening", self.opening)
 		self.assertEqual(op.ai_profile_approved, 1)

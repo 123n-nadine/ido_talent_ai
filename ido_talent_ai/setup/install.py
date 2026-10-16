@@ -26,7 +26,8 @@ def custom_fields() -> dict:
 	hidden = {"hidden": 1, "read_only": 1, "no_copy": 1, "permlevel": AI_LEVEL}
 	return {
 		"Job Opening": [
-			_f("ai_section", "Section Break", "Talent AI", insert_after="description", collapsible=0),
+			# in the main tab, after the publishing settings (after «description» HRMS v16 starts the Pay Details tab)
+			_f("ai_section", "Section Break", "Talent AI", insert_after="job_application_route", collapsible=0),
 			_f("ai_enabled", "Check", "AI screening enabled", insert_after="ai_section"),
 			_f("ai_profile", "Link", "AI Job Profile", options="AI Job Profile", insert_after="ai_enabled", depends_on="ai_enabled"),
 			_f("ai_column", "Column Break", "", insert_after="ai_profile"),
