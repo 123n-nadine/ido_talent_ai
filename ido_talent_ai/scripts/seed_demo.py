@@ -154,8 +154,8 @@ def ensure_template(data: dict) -> str:
 	return doc.name
 
 
-def ensure_opening(data: dict, company: str) -> str:
-	o = data["opening"]
+def ensure_opening(data: dict, company: str, o: dict | None = None) -> str:
+	o = o or data["opening"]
 	name = frappe.db.get_value("Job Opening", {"job_title": o["job_title"]})
 	if name:
 		return name
@@ -169,7 +169,7 @@ def ensure_opening(data: dict, company: str) -> str:
 			"designation": data["designation"],
 			"status": "Open",
 			"publish": 1,
-			"route": "jobs/security/security-supervisor-riyadh",
+			"route": o.get("route") or "jobs/security/security-supervisor-riyadh",
 			"description": f"<p>{o['description']}</p>",
 			"location": o["location"],
 			"closes_on": add_days(nowdate(), 60),
@@ -181,13 +181,13 @@ def ensure_opening(data: dict, company: str) -> str:
 	return doc.name
 
 
-def ensure_profile(opening: str, template: str, data: dict) -> str:
+def ensure_profile(opening: str, template: str, data: dict, title: str | None = None) -> str:
 	from ido_talent_ai.profile import approve, copy_from_template
 
 	name = frappe.db.get_value("AI Job Profile", {"job_opening": opening})
 	if not name:
 		doc = frappe.get_doc(
-			{"doctype": "AI Job Profile", "job_opening": opening, "title": data["opening"]["job_title"], "designation": data["designation"], "status": "Draft"}
+			{"doctype": "AI Job Profile", "job_opening": opening, "title": title or data["opening"]["job_title"], "designation": data["designation"], "status": "Draft"}
 		).insert(ignore_permissions=True)
 		name = doc.name
 		copy_from_template(name, template)
@@ -238,3 +238,37 @@ def rescore_all(opening: str) -> dict:
 	for n in names:
 		db_retry(queue_screening, n, "Rescreen", force=True)
 	return {"queued": len(names)}
+
+
+def second_opening() -> dict:
+	"""A second opening of the same designation (Jeddah): its ranking is separate (acceptance A5)
+	and its talent pool search finds the Riyadh applicants (feature 13)."""
+	_guard()
+	frappe.set_user("Administrator")
+	data = load()
+	company = ensure_setup(data)
+	template = ensure_template(data)
+	o = {"job_title": "مشرف أمن — جدة", "location": "جدة", "route": "jobs/security/security-supervisor-jeddah",
+		 "description": data["opening"]["description"]}
+	opening = ensure_opening(data, company, o)
+	profile = ensure_profile(opening, template, data, title=o["job_title"])
+	frappe.db.commit()
+	return {"opening": opening, "profile": profile}
+
+
+def pool_cases() -> dict:
+	"""Dev demo only: one applicant withdraws consent and one application is made to look old
+	(retention ended), so the talent pool shows both exclusions."""
+	_guard()
+	frappe.set_user("Administrator")
+	from ido_talent_ai.api import withdraw_consent
+	from ido_talent_ai.screening import sync_candidate
+
+	withdrawn = "applicant.2014@example.com"
+	old = "applicant.2019@example.com"
+	if frappe.db.get_value("Job Applicant", withdrawn, "ai_consent"):
+		withdraw_consent(withdrawn, "طلب المتقدم سحب موافقته على المعالجة (حالة تجريبية)")
+	frappe.db.set_value("Job Applicant", old, "creation", "2024-09-15 10:00:00", update_modified=False)
+	sync_candidate(old)
+	frappe.db.commit()
+	return {"consent_withdrawn": withdrawn, "retention_expired": old}
