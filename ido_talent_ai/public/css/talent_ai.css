@@ -397,8 +397,10 @@
 .tai .pipe-grid .pstep .t small,.tai .pstep .t small,.tai .rub,.tai .tag-hr,.tai .tag-off,.tai .poolwhy b,.tai th,.tai .card h2 small,.tai .ocrout .cf{font-size:12.5px}
 .tai .mnode .box .who{font-size:12px;padding:2px 9px}
 .tai .field label{font-size:13px}
-.tai .quote{font-size:13px;max-width:none;overflow-wrap:anywhere;white-space:normal;line-height:1.7}
-.tai td{overflow-wrap:anywhere}
+.tai .quote{font-size:13px;max-width:none;overflow-wrap:break-word;white-space:normal;line-height:1.7}
+/* break-word (not anywhere): a long word still breaks, but a column is never squeezed to one letter */
+.tai td{overflow-wrap:break-word}
+.tai td code,.tai td .mono{overflow-wrap:anywhere}
 .tai .score.off{color:#6b7280}
 .tai .cvtext,.tai .ocrline .ln{unicode-bidi:plaintext}
 .tai .kv .bands{display:flex;flex-wrap:wrap;gap:6px}

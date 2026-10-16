@@ -89,7 +89,7 @@ frappe.pages["ai-ranking"].on_page_load = function (wrapper) {
 	function rescoreAll() {
 		if (!state.opening) return;
 		frappe.confirm(T.t("إعادة تقييم كل النتائج القديمة والفاشلة بآخر نسخة معتمدة؟", "Re-score every stale and failed result with the latest approved version?"), () =>
-			T.call("rescreen_all", { job_opening: state.opening }).then((r) => { frappe.show_alert({ indicator: "blue", message: T.t(`أُضيف ${r.queued} للمعالجة`, `${r.queued} queued`) }); load(); })
+			T.call("rescreen_all", { job_opening: state.opening }).then((r) => { frappe.show_alert({ indicator: "blue", message: T.t(`أُضيف ${r.queued} للمعالجة` + (r.skipped ? ` · ${r.skipped} بدون موافقة على المعالجة` : ""), `${r.queued} queued` + (r.skipped ? ` · ${r.skipped} without consent` : "")) }); load(); })
 		);
 	}
 
