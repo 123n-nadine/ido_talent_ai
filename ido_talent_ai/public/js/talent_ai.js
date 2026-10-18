@@ -51,6 +51,7 @@ frappe.provide("talent_ai");
 		contradiction: { ar: "تعارض بين الإجابة والسيرة", en: "Answer vs CV contradiction" }, evidence_mismatch: { ar: "دليل لا يطابق الإجابة", en: "Evidence mismatch" },
 		quote_not_found: { ar: "اقتباس غير موجود (أُسقط)", en: "Quote not found (dropped)" }, cv_unreadable: { ar: "ملف السيرة غير مقروء", en: "CV unreadable" },
 		redaction_guard: { ar: "حارس الإخفاء أزال بيانات متبقية", en: "Redaction guard removed leftover data" },
+		cv_partial_read: { ar: "السيرة قُرئت جزئيًا", en: "CV read partially" },
 		low_ocr_confidence: { ar: "ثقة OCR منخفضة", en: "Low OCR confidence" }, duplicate: { ar: "طلب مكرر", en: "Duplicate" },
 		stale: { ar: "قديم — نسخة معايير سابقة", en: "Stale — previous version" }, data_changed: { ar: "النتيجة لا تعكس آخر تعديل", en: "Result does not reflect the latest edit" },
 		hr_override: { ar: "تعديل HR", en: "HR override" },
@@ -164,6 +165,7 @@ frappe.provide("talent_ai");
 		const cv = r.cv;
 		html += `
 		<div class="card"><h2>${t("تقييم الذكاء الاصطناعي", "AI assessment")} <span class="chip blue">${t("قراءة فقط — لا يغيّر حالة الطلب", "read-only — never changes the status")}</span> ${T.flagChips((r.flags || []).filter((f) => f !== "hr_override"))}</h2>
+			${(r.flags || []).includes("cv_partial_read") ? `<div class="note strong">⚠ <b>${t("السيرة قُرئت جزئيًا:", "The CV was read partially:")}</b> ${t("رد النموذج الأول تجاوز حد الطول، فأُعيدت القراءة على أول نصف النص فقط. أدلة السيرة تغطي ذلك الجزء وحده.", "the model's first answer overran its length budget, so the CV was re-read from its first half only. The CV evidence covers that part alone.")}</div>` : ""}
 			${(r.flags || []).includes("cv_unreadable") || T.cvNote ? `<div class="note danger">⚠ <b>${t("السيرة الذاتية لم تُقرأ — التقييم من إجابات النموذج فقط.", "The CV was not read — assessed from the form answers only.")}</b> ${T.esc(T.cvNote || (cv && cv.error) || "")}</div>` : ""}
 			${cv && cv.weak_lines && cv.weak_lines.length ? `<div class="note strong">◌ ${T.N(cv.weak_lines.length)} ${t("من أسطر السيرة ضعيفة القراءة (ثقة أقل من 80%) واستُبعدت من الأدلة.", "CV lines were read with low confidence (under 80%) and were excluded from the evidence.")}</div>` : ""}
 			<div class="aihead">
