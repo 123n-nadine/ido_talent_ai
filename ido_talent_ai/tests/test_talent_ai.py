@@ -16,6 +16,7 @@ import time
 from unittest.mock import patch
 
 import frappe
+from frappe.utils import flt
 from frappe.tests import IntegrationTestCase
 from werkzeug.test import EnvironBuilder
 from werkzeug.wrappers import Request
@@ -537,7 +538,7 @@ class TestTalentAI(IntegrationTestCase):
 		"""`creation` and `finished_on` are in the site's time zone while the database clock may be
 		UTC (it is on the local bench): rebuilding the demo found 15 applications left «Processing»
 		because the 2-minute safety net compared them with SQL now()."""
-		from frappe.utils import add_to_date, now_datetime
+		from frappe.utils import flt, add_to_date, now_datetime
 
 		res, _ = self._apply("safety.net@example.com", {"years_sup": 2, "licence": "سارية"}, national_id="1000000555")
 		name = res["reference"]
@@ -738,3 +739,26 @@ class TestTalentAI(IntegrationTestCase):
 		self.assertEqual(r["message"], "محرك الذكاء غير متاح حاليًا — الطلبات تُحفظ بشكل طبيعي وتُقيَّم عند عودته.")
 		for word in ("ConnectionError", "EngineUnavailable", "Traceback", "http"):
 			self.assertNotIn(word, json.dumps(r, ensure_ascii=False))
+
+	def test_engine_failure_result_marks_the_application_failed(self):
+		"""Round 12: the engine's signed «failed» result (sent after its last attempt) makes the
+		application «Failed» with the red bar and «إعادة المحاولة», in plain Arabic; the technical
+		reason goes to the error log only."""
+		res, _ = self._apply("a12.enginefail@example.com", {"years_sup": 3, "licence": "سارية"})
+		doc = frappe.get_doc("Job Applicant", res["reference"])
+		a = screening._assessment_for(doc)
+		a.engine_screening_id = "scr_test_fail_12"
+		a.save()
+		job = frappe.get_doc({"doctype": "AI Recruitment Job", "reference_doctype": "Job Applicant", "reference_name": doc.name,
+							  "job_opening": doc.job_title, "job_type": "Screening", "status": "Running", "attempts": 1, "max_attempts": 3,
+							  "engine_screening_id": "scr_test_fail_12"}).insert(ignore_permissions=True)
+		before = frappe.db.count("Error Log")
+		self._complete(doc.name, status="failed", error="LLMOutputError: candidate_profile: invalid JSON after repair", score=None, criteria=[])
+		self.assertEqual(frappe.db.get_value("Job Applicant", doc.name, "ai_status"), "Failed")
+		self.assertEqual(flt(frappe.db.get_value("Job Applicant", doc.name, "ai_score")), 0)
+		job.reload()
+		self.assertEqual(job.status, "Failed")
+		self.assertEqual(job.error_message, screening.ENGINE_FAILED_MESSAGE)
+		for word in ("LLMOutputError", "Traceback", "Error"):
+			self.assertNotIn(word, job.error_message)
+		self.assertGreater(frappe.db.count("Error Log"), before)  # the technical reason is logged
