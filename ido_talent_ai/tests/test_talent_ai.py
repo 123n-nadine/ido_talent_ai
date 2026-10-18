@@ -710,3 +710,13 @@ class TestTalentAI(IntegrationTestCase):
 				api.home_counts()
 		finally:
 			frappe.set_user("Administrator")
+
+	def test_partial_cv_read_flag_is_shown_on_the_assessment_card(self):
+		"""Round 8: the engine raises «cv_partial_read» when the model's first answer overran and the
+		CV was re-read from its first half; the card must label the flag and explain it to HR."""
+		import os
+
+		js = open(os.path.join(os.path.dirname(__file__), "..", "public", "js", "talent_ai.js"), encoding="utf-8").read()
+		self.assertIn('cv_partial_read: { ar: "السيرة قُرئت جزئيًا"', js)
+		self.assertIn('includes("cv_partial_read") ? `<div class="note strong">', js)
+		self.assertIn("أُعيدت القراءة على أول نصف النص فقط", js)
