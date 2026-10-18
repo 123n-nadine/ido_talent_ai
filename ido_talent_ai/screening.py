@@ -31,6 +31,7 @@ from ido_talent_ai.utils import (
 
 TRANSIENT_DB_ERRORS = (frappe.QueryDeadlockError, frappe.QueryTimeoutError)
 NO_CONSENT_JOB = "لا موافقة على المعالجة — أُلغيت المهمة"
+ENGINE_FAILED_MESSAGE = "تعذّر إكمال التقييم داخل محرك الذكاء بعد المحاولات — الطلب محفوظ بكل بياناته، ويمكن إعادة المحاولة من الزر."
 # what the AI made of an application, cleared when the consent is withdrawn (the application stays)
 AI_RESULT_FIELDS = {
 	"ai_score": 0, "ai_band": "", "ai_eligibility": "", "ai_coverage": 0, "ai_rank": 0, "ai_evaluated_on": None,
@@ -530,7 +531,7 @@ def apply_result(payload: dict) -> str | None:
 		applicant_name,
 		{
 			"ai_status": status,
-			"ai_score": payload.get("score") if status != "Failed" else None,
+			"ai_score": flt(payload.get("score")) if status != "Failed" else 0,  # the column is NOT NULL (Float): a failed result shows no score anyway
 			"ai_band": payload.get("band") or "",
 			"ai_eligibility": payload.get("eligibility") or "",
 			"ai_coverage": flt(payload.get("coverage")) * 100,
@@ -548,10 +549,13 @@ def apply_result(payload: dict) -> str | None:
 		filters={"engine_screening_id": payload.get("screening_id"), "status": ["in", ["Running", "Queued"]]},
 		pluck="name",
 	)
+	if status == "Failed" and payload.get("error"):
+		# the engine's reason is technical (round 12): it goes to the error log, HR reads one sentence
+		frappe.log_error(f"Talent AI engine screening {payload.get('screening_id')} failed: {payload.get('error')}", "Talent AI")
 	for jn in jobs:
 		job = frappe.get_doc("AI Recruitment Job", jn)
 		job.status = "Failed" if status == "Failed" else "Completed"
-		job.error_message = payload.get("error") if status == "Failed" else None
+		job.error_message = ENGINE_FAILED_MESSAGE if status == "Failed" else None
 		job.finished_on = now_datetime()
 		if job.started_on:
 			job.duration_s = (job.finished_on - job.started_on).total_seconds()
