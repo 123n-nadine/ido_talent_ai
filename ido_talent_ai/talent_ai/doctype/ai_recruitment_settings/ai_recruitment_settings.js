@@ -22,6 +22,10 @@ const talent_ai_settings = (window.talent_ai_settings = {
 		$w.html(`<div class="tai"><span class="spin"></span></div>`);
 		frappe.xcall("ido_talent_ai.api.engine_settings")
 			.then((r) => {
+				if (r.available === false) {
+					$w.html(`<div class="tai"><div class="note strong">⚠ ${T.esc(r.message || t("محرك الذكاء غير متاح حاليًا.", "The AI engine is not available right now."))}</div></div>`);
+					return;
+				}
 				const s = r.settings || {};
 				const h = r.health || {};
 				const row = (k, v) => `<tr><td class="hint">${k}</td><td>${v}</td></tr>`;
@@ -35,6 +39,6 @@ const talent_ai_settings = (window.talent_ai_settings = {
 					${row(t("رابط النتيجة (callback)", "Callback URL"), `<code>${T.esc(s.callback_url || "—")}</code> ${s.callback_secret_set ? `<span class="chip green">${t("موقّع HMAC", "HMAC signed")}</span>` : `<span class="chip red">${t("بلا سر", "no secret")}</span>`}`)}
 				</table><div class="hint">${t("المزوّد السحابي مُعطّل حتى يُضاف مفتاح في المحرك. مفتاح المحرك لا يصل إلى المتصفح أبدًا.", "The cloud provider stays disabled until a key is added in the engine. The engine key never reaches the browser.")}</div></div></div>`);
 			})
-			.catch((e) => $w.html(`<div class="tai"><div class="note danger">${t("تعذّر الاتصال بالمحرك", "Could not reach the engine")}: ${T.esc(e.message || e)}</div></div>`));
+			.catch(() => $w.html(`<div class="tai"><div class="note strong">⚠ ${t("محرك الذكاء غير متاح حاليًا — الطلبات تُحفظ بشكل طبيعي وتُقيَّم عند عودته.", "The AI engine is not available right now — applications are saved as usual and assessed when it is back.")}</div></div>`));
 	},
 });

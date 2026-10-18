@@ -27,6 +27,9 @@ class EngineUnavailable(EngineError):
 	"""The engine could not be reached (connection refused, DNS, timeout)."""
 
 
+UNAVAILABLE_MESSAGE = "محرك الذكاء غير متاح حاليًا — الطلبات تُحفظ بشكل طبيعي وتُقيَّم عند عودته."
+
+
 def _base() -> tuple[str, dict[str, str], int]:
 	s = get_settings()
 	url = (s.engine_url or "").rstrip("/")
@@ -62,7 +65,9 @@ def call(
 			timeout=timeout or default_timeout,
 		)
 	except (requests.ConnectionError, requests.Timeout) as e:
-		raise EngineUnavailable(_("Could not reach the AI engine: {0}").format(type(e).__name__)) from e
+		# a plain sentence for HR, no technical name (round 10): the kind of failure is in the log
+		frappe.log_error(f"Talent AI engine unreachable: {type(e).__name__}", "Talent AI")
+		raise EngineUnavailable(UNAVAILABLE_MESSAGE) from e
 	if resp.status_code >= 400:
 		try:
 			payload = resp.json()

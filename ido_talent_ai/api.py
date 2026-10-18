@@ -679,7 +679,11 @@ def cv_page(applicant: str, page: int = 0):
 @frappe.whitelist()
 def engine_settings() -> dict:
 	require_hr()
-	return {"health": engine.health(), "settings": engine.get("/v1/settings")}
+	try:
+		return {"available": True, "health": engine.health(), "settings": engine.get("/v1/settings")}
+	except engine.EngineUnavailable:
+		# the settings screen shows a plain sentence instead of a server error (round 10)
+		return {"available": False, "message": engine.UNAVAILABLE_MESSAGE, "health": {"ok": False}, "settings": {}}
 
 
 @frappe.whitelist()

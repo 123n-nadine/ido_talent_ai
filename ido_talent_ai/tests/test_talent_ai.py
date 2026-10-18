@@ -175,7 +175,7 @@ class TestTalentAI(IntegrationTestCase):
 		job.reload()
 		self.assertEqual(job.status, "Failed")
 		self.assertEqual(job.attempts, 3)
-		self.assertIn("reach", job.error_message)
+		self.assertIn("غير متاح حاليًا", job.error_message)  # the plain sentence for HR, no technical name (round 10)
 		doc.reload()
 		self.assertEqual(doc.ai_status, "Failed")
 		self.assertEqual(doc.status, "Open")
@@ -720,3 +720,21 @@ class TestTalentAI(IntegrationTestCase):
 		self.assertIn('cv_partial_read: { ar: "السيرة قُرئت جزئيًا"', js)
 		self.assertIn('includes("cv_partial_read") ? `<div class="note strong">', js)
 		self.assertIn("أُعيدت القراءة على أول نصف النص فقط", js)
+
+	def test_engine_down_message_is_plain_arabic(self):
+		"""Round 10: with the engine unreachable the settings screen gets a plain sentence for HR,
+		never a server error or a technical name."""
+		old = get_settings().engine_url
+		frappe.db.set_single_value("AI Recruitment Settings", "engine_url", "http://127.0.0.1:9")  # a closed port
+		frappe.clear_cache()
+		try:
+			frappe.set_user("hr.manager@example.com")
+			r = api.engine_settings()
+		finally:
+			frappe.db.set_single_value("AI Recruitment Settings", "engine_url", old)
+			frappe.clear_cache()
+			frappe.set_user("Administrator")
+		self.assertFalse(r["available"])
+		self.assertEqual(r["message"], "محرك الذكاء غير متاح حاليًا — الطلبات تُحفظ بشكل طبيعي وتُقيَّم عند عودته.")
+		for word in ("ConnectionError", "EngineUnavailable", "Traceback", "http"):
+			self.assertNotIn(word, json.dumps(r, ensure_ascii=False))
