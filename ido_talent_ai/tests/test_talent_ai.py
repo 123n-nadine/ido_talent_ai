@@ -762,3 +762,16 @@ class TestTalentAI(IntegrationTestCase):
 		for word in ("LLMOutputError", "Traceback", "Error"):
 			self.assertNotIn(word, job.error_message)
 		self.assertGreater(frappe.db.count("Error Log"), before)  # the technical reason is logged
+
+	def test_free_text_answer_never_carries_the_applicant_name(self):
+		"""Final QA: a free answer that mentions the applicant's own name is sent to the engine
+		with the name replaced (the engine redacts phones, e-mails and IDs itself, not this name)."""
+		res, _ = self._apply("a13.name@example.com", {"years_sup": 2, "licence": "سارية", "last_job": "أنا متقدم تجريبي، مشرف وردية منذ 2019 وأتابع 8 حراس"})
+		doc = frappe.get_doc("Job Applicant", res["reference"])
+		payload = screening.candidate_payload(doc)
+		txt = payload["answers"].get("last_job") or ""
+		self.assertNotIn("متقدم تجريبي", txt)
+		self.assertIn("[الاسم]", txt)
+		self.assertIn("منذ 2019 وأتابع 8 حراس", txt)  # the evidence stays
+		self.assertEqual(screening.strip_own_name("مشرف أمن في بنك", "ماجد الشهراني"), "مشرف أمن في بنك")
+		self.assertEqual(screening.strip_own_name("اسمي ماجد الشهراني والشهراني لقبي", "ماجد الشهراني"), "اسمي [الاسم] [الاسم] [الاسم] لقبي")

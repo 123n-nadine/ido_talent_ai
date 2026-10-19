@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import re
 import random
 import time
 from typing import Any
@@ -107,6 +108,19 @@ def parse_answer(raw: str | None, qtype: str) -> Any:
 	return text
 
 
+def strip_own_name(text: str, applicant_name: str | None) -> str:
+	"""Every word of the applicant's name (3+ letters, with or without a leading «ال»/«و») is
+	replaced by «[الاسم]» in a free-text answer."""
+	if not text or not applicant_name:
+		return text
+	out = text
+	for part in sorted({w.strip("،,.()") for w in applicant_name.split()}, key=len, reverse=True):
+		if len(part) < 3:
+			continue
+		out = re.sub(r"(?<![\w\u0600-\u06FF])[و]?" + re.escape(part) + r"(?![\w\u0600-\u06FF])", "[الاسم]", out)
+	return out
+
+
 def candidate_payload(applicant) -> dict:
 	s = get_settings()
 	allowed = {x.strip() for x in (s.allowed_facts or "").splitlines() if x.strip()}
@@ -124,6 +138,11 @@ def candidate_payload(applicant) -> dict:
 		row.question_key: parse_answer(row.answer, types.get(row.question_key, "text"))
 		for row in applicant.get("ai_answers") or []
 	}
+	# the applicant's own name typed into a free answer never reaches the engine (final QA):
+	# the engine's redaction knows phones, e-mails and IDs but not this applicant's name
+	for key, val in list(answers.items()):
+		if types.get(key, "text") == "text" and isinstance(val, str):
+			answers[key] = strip_own_name(val, applicant.get("applicant_name"))
 	return {
 		"id_token": id_token(applicant.get("national_id")),
 		"facts": facts,
