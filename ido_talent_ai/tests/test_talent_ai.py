@@ -740,6 +740,28 @@ class TestTalentAI(IntegrationTestCase):
 		for word in ("ConnectionError", "EngineUnavailable", "Traceback", "http"):
 			self.assertNotIn(word, json.dumps(r, ensure_ascii=False))
 
+	def test_engine_settings_are_refused_to_hr_user(self):
+		"""Final QA (Q5): the settings screen refuses an HR User, and so do the two API reads behind it
+		(the engine's provider, model, callback URL and prompt are for HR Manager and System Manager
+		only, like the «AI Recruitment Settings» DocType itself)."""
+		from ido_talent_ai.talent_ai.doctype.ai_recruitment_settings import ai_recruitment_settings
+
+		email = "talentai.hr.user.only@example.com"
+		if not frappe.db.exists("User", email):
+			u = frappe.get_doc({"doctype": "User", "email": email, "first_name": "HR User", "send_welcome_email": 0, "roles": [{"role": "HR User"}]})
+			u.insert()
+		try:
+			frappe.set_user(email)
+			self.assertFalse(frappe.has_permission("AI Recruitment Settings", "read"))
+			with self.assertRaises(frappe.PermissionError):
+				api.engine_settings()
+			with self.assertRaises(frappe.PermissionError):
+				ai_recruitment_settings.refresh_from_engine()
+			frappe.set_user("hr.manager@example.com")
+			self.assertIn("available", api.engine_settings())
+		finally:
+			frappe.set_user("Administrator")
+
 	def test_engine_failure_result_marks_the_application_failed(self):
 		"""Round 12: the engine's signed «failed» result (sent after its last attempt) makes the
 		application «Failed» with the red bar and «إعادة المحاولة», in plain Arabic; the technical

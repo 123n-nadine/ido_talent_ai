@@ -24,6 +24,7 @@ from ido_talent_ai.utils import (
 	get_settings,
 	is_hr,
 	require_hr,
+	require_settings_access,
 )
 
 MAX_CV_BYTES = 10 * 1024 * 1024
@@ -678,7 +679,7 @@ def cv_page(applicant: str, page: int = 0):
 # ----------------------------------------------------------------------------- settings
 @frappe.whitelist()
 def engine_settings() -> dict:
-	require_hr()
+	require_settings_access()
 	try:
 		return {"available": True, "health": engine.health(), "settings": engine.get("/v1/settings")}
 	except engine.EngineUnavailable:
