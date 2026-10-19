@@ -762,6 +762,30 @@ class TestTalentAI(IntegrationTestCase):
 		finally:
 			frappe.set_user("Administrator")
 
+	def test_empty_cv_file_is_refused_with_a_clear_message(self):
+		"""Final QA (Q6): a 0-byte CV was saved as «no CV» without a word; now the form refuses it like a
+		wrong type, and the applicant can send the right file (nothing is saved with a bad file)."""
+		from io import BytesIO
+		from types import SimpleNamespace
+
+		from werkzeug.datastructures import FileStorage
+
+		email = "empty.cv@example.com"
+		frappe.local.form_dict = frappe._dict({
+			"job_title": self.opening, "applicant_name": "متقدم تجريبي", "email_id": email, "nationality": "Saudi Arabia",
+			"id_type": "هوية وطنية", "national_id": "1000088009", "date_of_birth": "1995-01-01", "height_cm": 180,
+			"ai_consent": 1, "answers": json.dumps({"years_sup": 3, "licence": "سارية"}, ensure_ascii=False),
+		})
+		frappe.local.request = SimpleNamespace(files={"cv": FileStorage(BytesIO(b""), filename="cv.pdf")}, method="POST")
+		try:
+			with patch.object(frappe, "enqueue"):
+				res = api.apply.__wrapped__() if hasattr(api.apply, "__wrapped__") else api.apply()
+		finally:
+			frappe.local.request = None
+		self.assertFalse(res["ok"])
+		self.assertTrue(any("فارغ" in e for e in res["errors"]), res)
+		self.assertFalse(frappe.db.exists("Job Applicant", {"email_id": email}))
+
 	def test_engine_failure_result_marks_the_application_failed(self):
 		"""Round 12: the engine's signed «failed» result (sent after its last attempt) makes the
 		application «Failed» with the red bar and «إعادة المحاولة», in plain Arabic; the technical

@@ -87,6 +87,9 @@ def apply():
 			cv_bytes = cv.stream.read()
 			if len(cv_bytes) > MAX_CV_BYTES:
 				errors.append("حجم ملف السيرة أكبر من 10 ميجابايت")
+			elif not cv_bytes:
+				# final QA (Q6): an empty file was silently dropped and the applicant never knew
+				errors.append("ملف السيرة فارغ — ارفع الملف الصحيح أو اتركه بدون سيرة")
 	if errors:
 		frappe.local.response.http_status_code = 422
 		return {"ok": False, "errors": errors}

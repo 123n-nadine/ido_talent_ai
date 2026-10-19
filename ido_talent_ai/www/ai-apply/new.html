@@ -133,6 +133,7 @@
 		});
 		const cv = document.getElementById("f-cv").files[0];
 		if (cv && cv.size > 10 * 1024 * 1024) e.push(t("حجم ملف السيرة أكبر من 10 ميجابايت", "The CV file is larger than 10 MB"));
+		if (cv && cv.size === 0) e.push(t("ملف السيرة فارغ — ارفع الملف الصحيح أو اتركه بدون سيرة", "The CV file is empty — upload the right file or leave it out"));
 		if (!v.ai_consent) e.push(t("الموافقة على معالجة البيانات مطلوبة", "Consent to processing is required"));
 		return e;
 	}
