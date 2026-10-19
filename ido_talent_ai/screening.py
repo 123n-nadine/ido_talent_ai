@@ -853,7 +853,9 @@ def retry_failed_jobs() -> None:
 		msg = job.error_message or ""
 		if not frappe.db.get_value("Job Applicant", job.reference_name, "ai_consent"):
 			continue
-		if "reach" in msg or "timeout" in msg or "AI engine error" in msg:
+		# engine.UNAVAILABLE_MESSAGE: since round 10 an engine outage is stored as the plain Arabic
+		# sentence, which the English keywords never matched — the hourly retry did not fire (final QA, Q9)
+		if engine.UNAVAILABLE_MESSAGE in msg or "reach" in msg or "timeout" in msg or "AI engine error" in msg:
 			db_retry(queue_screening, job.reference_name, "Rescreen")
 	frappe.db.commit()
 

@@ -13,7 +13,7 @@ import io
 import hmac
 import json
 import time
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe.utils import flt
@@ -180,6 +180,10 @@ class TestTalentAI(IntegrationTestCase):
 		doc.reload()
 		self.assertEqual(doc.ai_status, "Failed")
 		self.assertEqual(doc.status, "Open")
+		# final QA (Q9): the hourly retry recognises that failure and queues the application again
+		with patch.object(screening, "queue_screening") as again:
+			screening.retry_failed_jobs()
+		self.assertIn(doc.name, [c.args[0] for c in again.call_args_list])
 
 	def test_missing_required_answer_and_consent_are_refused(self):
 		frappe.local.form_dict = frappe._dict(
@@ -785,6 +789,21 @@ class TestTalentAI(IntegrationTestCase):
 		self.assertFalse(res["ok"])
 		self.assertTrue(any("فارغ" in e for e in res["errors"]), res)
 		self.assertFalse(frappe.db.exists("Job Applicant", {"email_id": email}))
+
+	def test_engine_5xx_is_the_plain_sentence_for_hr(self):
+		"""Final QA (Q9): an engine 5xx (e.g. 503 «queue unavailable» while its Redis restarts) reached
+		HR's red bar as «خطأ في محرك الذكاء 503: queue unavailable, try again»; now it is the same plain
+		sentence as an unreachable engine, and the hourly retry recognises it."""
+		from ido_talent_ai import engine
+
+		resp = MagicMock(status_code=503, text="queue unavailable")
+		resp.json.return_value = {"detail": "queue unavailable, try again"}
+		with patch("requests.request", return_value=resp):
+			with self.assertRaises(engine.EngineUnavailable) as ctx:
+				engine.call("POST", "/v1/screenings", json={})
+		self.assertEqual(str(ctx.exception), engine.UNAVAILABLE_MESSAGE)
+		for word in ("503", "queue", "error"):
+			self.assertNotIn(word, str(ctx.exception))
 
 	def test_engine_failure_result_marks_the_application_failed(self):
 		"""Round 12: the engine's signed «failed» result (sent after its last attempt) makes the
