@@ -805,6 +805,18 @@ class TestTalentAI(IntegrationTestCase):
 		for word in ("503", "queue", "error"):
 			self.assertNotIn(word, str(ctx.exception))
 
+	def test_failed_score_shows_a_dash_in_the_list(self):
+		"""Final QA (Q3): a failed screening keeps ai_score 0 in the database (the column is NOT NULL), but
+		the applicant list shows «—» instead of a score of 0."""
+		import os
+
+		js = open(os.path.join(os.path.dirname(__file__), "..", "public", "js", "job_applicant_list.js"), encoding="utf-8").read()
+		self.assertIn('if (doc.ai_status === "Failed") return `<span class="text-muted">—</span>`;', js)
+		# inside the ai_score formatter, before the number is drawn
+		start = js.index("ai_score(value, df, doc) {")
+		self.assertLess(start, js.index('doc.ai_status === "Failed"'))
+		self.assertLess(js.index('doc.ai_status === "Failed"'), js.index("T.fmt1(value)", start))
+
 	def test_engine_failure_result_marks_the_application_failed(self):
 		"""Round 12: the engine's signed «failed» result (sent after its last attempt) makes the
 		application «Failed» with the red bar and «إعادة المحاولة», in plain Arabic; the technical
