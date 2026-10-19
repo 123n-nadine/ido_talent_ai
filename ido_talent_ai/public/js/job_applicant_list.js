@@ -20,7 +20,9 @@
 				return pill(doc.ai_stale ? { cls: "grey" } : o, T.L(o) + stale);
 			},
 			ai_score(value, df, doc) {
-				// a score only exists for a finished screening (0 is the empty value of the column)
+				// a score only exists for a finished screening (0 is the empty value of the column);
+				// a failed screening shows a dash, never its 0 (final QA)
+				if (doc.ai_status === "Failed") return `<span class="text-muted">—</span>`;
 				if (value == null || value === "" || !["Completed", "Needs Review"].includes(doc.ai_status)) return "";
 				const T = talent_ai;
 				if (doc.ai_eligibility === "not_eligible") return `<b class="text-muted">${T.fmt1(value)}</b> ${pill({ cls: "red" }, T.t("غير مستوفٍ", "not eligible"))}`;

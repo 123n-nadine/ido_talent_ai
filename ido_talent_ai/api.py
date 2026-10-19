@@ -24,6 +24,7 @@ from ido_talent_ai.utils import (
 	get_settings,
 	is_hr,
 	require_hr,
+	require_settings_access,
 )
 
 MAX_CV_BYTES = 10 * 1024 * 1024
@@ -86,6 +87,9 @@ def apply():
 			cv_bytes = cv.stream.read()
 			if len(cv_bytes) > MAX_CV_BYTES:
 				errors.append("حجم ملف السيرة أكبر من 10 ميجابايت")
+			elif not cv_bytes:
+				# final QA (Q6): an empty file was silently dropped and the applicant never knew
+				errors.append("ملف السيرة فارغ — ارفع الملف الصحيح أو اتركه بدون سيرة")
 	if errors:
 		frappe.local.response.http_status_code = 422
 		return {"ok": False, "errors": errors}
@@ -678,7 +682,7 @@ def cv_page(applicant: str, page: int = 0):
 # ----------------------------------------------------------------------------- settings
 @frappe.whitelist()
 def engine_settings() -> dict:
-	require_hr()
+	require_settings_access()
 	try:
 		return {"available": True, "health": engine.health(), "settings": engine.get("/v1/settings")}
 	except engine.EngineUnavailable:

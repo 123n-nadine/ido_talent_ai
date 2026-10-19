@@ -36,6 +36,13 @@ def require_hr() -> None:
 		frappe.throw(frappe._("Only HR Manager or HR User can do this."), frappe.PermissionError)
 
 
+def require_settings_access() -> None:
+	"""The engine settings (provider, model, callback URL, prompt) are read by the same users who may
+	open «AI Recruitment Settings»: HR Manager and System Manager, never HR User (final QA, Q5)."""
+	if not frappe.has_permission("AI Recruitment Settings", "read"):
+		frappe.throw(frappe._("Only HR Manager or System Manager can read the AI settings."), frappe.PermissionError)
+
+
 def audit(
 	action: str,
 	reference_doctype: str | None = None,

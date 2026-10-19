@@ -13,7 +13,7 @@ import io
 import hmac
 import json
 import time
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe.utils import flt
@@ -180,6 +180,10 @@ class TestTalentAI(IntegrationTestCase):
 		doc.reload()
 		self.assertEqual(doc.ai_status, "Failed")
 		self.assertEqual(doc.status, "Open")
+		# final QA (Q9): the hourly retry recognises that failure and queues the application again
+		with patch.object(screening, "queue_screening") as again:
+			screening.retry_failed_jobs()
+		self.assertIn(doc.name, [c.args[0] for c in again.call_args_list])
 
 	def test_missing_required_answer_and_consent_are_refused(self):
 		frappe.local.form_dict = frappe._dict(
@@ -740,6 +744,79 @@ class TestTalentAI(IntegrationTestCase):
 		for word in ("ConnectionError", "EngineUnavailable", "Traceback", "http"):
 			self.assertNotIn(word, json.dumps(r, ensure_ascii=False))
 
+	def test_engine_settings_are_refused_to_hr_user(self):
+		"""Final QA (Q5): the settings screen refuses an HR User, and so do the two API reads behind it
+		(the engine's provider, model, callback URL and prompt are for HR Manager and System Manager
+		only, like the «AI Recruitment Settings» DocType itself)."""
+		from ido_talent_ai.talent_ai.doctype.ai_recruitment_settings import ai_recruitment_settings
+
+		email = "talentai.hr.user.only@example.com"
+		if not frappe.db.exists("User", email):
+			u = frappe.get_doc({"doctype": "User", "email": email, "first_name": "HR User", "send_welcome_email": 0, "roles": [{"role": "HR User"}]})
+			u.insert()
+		try:
+			frappe.set_user(email)
+			self.assertFalse(frappe.has_permission("AI Recruitment Settings", "read"))
+			with self.assertRaises(frappe.PermissionError):
+				api.engine_settings()
+			with self.assertRaises(frappe.PermissionError):
+				ai_recruitment_settings.refresh_from_engine()
+			frappe.set_user("hr.manager@example.com")
+			self.assertIn("available", api.engine_settings())
+		finally:
+			frappe.set_user("Administrator")
+
+	def test_empty_cv_file_is_refused_with_a_clear_message(self):
+		"""Final QA (Q6): a 0-byte CV was saved as «no CV» without a word; now the form refuses it like a
+		wrong type, and the applicant can send the right file (nothing is saved with a bad file)."""
+		from io import BytesIO
+		from types import SimpleNamespace
+
+		from werkzeug.datastructures import FileStorage
+
+		email = "empty.cv@example.com"
+		frappe.local.form_dict = frappe._dict({
+			"job_title": self.opening, "applicant_name": "متقدم تجريبي", "email_id": email, "nationality": "Saudi Arabia",
+			"id_type": "هوية وطنية", "national_id": "1000088009", "date_of_birth": "1995-01-01", "height_cm": 180,
+			"ai_consent": 1, "answers": json.dumps({"years_sup": 3, "licence": "سارية"}, ensure_ascii=False),
+		})
+		frappe.local.request = SimpleNamespace(files={"cv": FileStorage(BytesIO(b""), filename="cv.pdf")}, method="POST")
+		try:
+			with patch.object(frappe, "enqueue"):
+				res = api.apply.__wrapped__() if hasattr(api.apply, "__wrapped__") else api.apply()
+		finally:
+			frappe.local.request = None
+		self.assertFalse(res["ok"])
+		self.assertTrue(any("فارغ" in e for e in res["errors"]), res)
+		self.assertFalse(frappe.db.exists("Job Applicant", {"email_id": email}))
+
+	def test_engine_5xx_is_the_plain_sentence_for_hr(self):
+		"""Final QA (Q9): an engine 5xx (e.g. 503 «queue unavailable» while its Redis restarts) reached
+		HR's red bar as «خطأ في محرك الذكاء 503: queue unavailable, try again»; now it is the same plain
+		sentence as an unreachable engine, and the hourly retry recognises it."""
+		from ido_talent_ai import engine
+
+		resp = MagicMock(status_code=503, text="queue unavailable")
+		resp.json.return_value = {"detail": "queue unavailable, try again"}
+		with patch("requests.request", return_value=resp):
+			with self.assertRaises(engine.EngineUnavailable) as ctx:
+				engine.call("POST", "/v1/screenings", json={})
+		self.assertEqual(str(ctx.exception), engine.UNAVAILABLE_MESSAGE)
+		for word in ("503", "queue", "error"):
+			self.assertNotIn(word, str(ctx.exception))
+
+	def test_failed_score_shows_a_dash_in_the_list(self):
+		"""Final QA (Q3): a failed screening keeps ai_score 0 in the database (the column is NOT NULL), but
+		the applicant list shows «—» instead of a score of 0."""
+		import os
+
+		js = open(os.path.join(os.path.dirname(__file__), "..", "public", "js", "job_applicant_list.js"), encoding="utf-8").read()
+		self.assertIn('if (doc.ai_status === "Failed") return `<span class="text-muted">—</span>`;', js)
+		# inside the ai_score formatter, before the number is drawn
+		start = js.index("ai_score(value, df, doc) {")
+		self.assertLess(start, js.index('doc.ai_status === "Failed"'))
+		self.assertLess(js.index('doc.ai_status === "Failed"'), js.index("T.fmt1(value)", start))
+
 	def test_engine_failure_result_marks_the_application_failed(self):
 		"""Round 12: the engine's signed «failed» result (sent after its last attempt) makes the
 		application «Failed» with the red bar and «إعادة المحاولة», in plain Arabic; the technical
@@ -762,3 +839,16 @@ class TestTalentAI(IntegrationTestCase):
 		for word in ("LLMOutputError", "Traceback", "Error"):
 			self.assertNotIn(word, job.error_message)
 		self.assertGreater(frappe.db.count("Error Log"), before)  # the technical reason is logged
+
+	def test_free_text_answer_never_carries_the_applicant_name(self):
+		"""Final QA: a free answer that mentions the applicant's own name is sent to the engine
+		with the name replaced (the engine redacts phones, e-mails and IDs itself, not this name)."""
+		res, _ = self._apply("a13.name@example.com", {"years_sup": 2, "licence": "سارية", "last_job": "أنا متقدم تجريبي، مشرف وردية منذ 2019 وأتابع 8 حراس"})
+		doc = frappe.get_doc("Job Applicant", res["reference"])
+		payload = screening.candidate_payload(doc)
+		txt = payload["answers"].get("last_job") or ""
+		self.assertNotIn("متقدم تجريبي", txt)
+		self.assertIn("[الاسم]", txt)
+		self.assertIn("منذ 2019 وأتابع 8 حراس", txt)  # the evidence stays
+		self.assertEqual(screening.strip_own_name("مشرف أمن في بنك", "ماجد الشهراني"), "مشرف أمن في بنك")
+		self.assertEqual(screening.strip_own_name("اسمي ماجد الشهراني والشهراني لقبي", "ماجد الشهراني"), "اسمي [الاسم] [الاسم] [الاسم] لقبي")

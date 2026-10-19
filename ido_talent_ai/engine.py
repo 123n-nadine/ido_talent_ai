@@ -75,7 +75,11 @@ def call(
 		except ValueError:
 			payload, detail = None, resp.text[:300]
 		if resp.status_code >= 500:
-			raise EngineUnavailable(_("AI engine error {0}: {1}").format(resp.status_code, detail), resp.status_code, payload)
+			# the same plain sentence for HR as an unreachable engine (round 10); the status and the
+			# engine's own detail go to the Error Log (final QA, Q9: «503: queue unavailable» in English
+			# reached the red bar, and the hourly retry did not recognise the failure)
+			frappe.log_error(f"Talent AI engine error {resp.status_code}: {str(detail)[:300]}", "Talent AI")
+			raise EngineUnavailable(UNAVAILABLE_MESSAGE, resp.status_code, payload)
 		raise EngineError(str(detail), resp.status_code, payload)
 	frappe.local.talent_ai_last_call_ms = int((time.time() - t0) * 1000)
 	if raw:

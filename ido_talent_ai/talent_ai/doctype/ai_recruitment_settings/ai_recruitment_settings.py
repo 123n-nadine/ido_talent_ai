@@ -55,9 +55,9 @@ class AIRecruitmentSettings(Document):
 @frappe.whitelist()
 def refresh_from_engine() -> dict:
 	from ido_talent_ai import engine
-	from ido_talent_ai.utils import require_hr
+	from ido_talent_ai.utils import require_settings_access
 
-	require_hr()
+	require_settings_access()
 	res = engine.get("/v1/settings")
 	frappe.get_single("AI Recruitment Settings")._copy_from_engine(res)
 	return {"settings": res, "health": engine.health()}
